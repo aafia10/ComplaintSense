@@ -1,0 +1,10 @@
+QuickShip Last-Mile Delivery Policy
+
+1. Delivery Attempts:
+QuickShip performs up to 3 delivery attempts on consecutive business days. If the consignee is unavailable, the driver leaves an attempted delivery notice and triggers an automated WhatsApp/SMS reschedule link.
+
+2. Proof of Delivery (POD):
+All consignments require either a physical OTP verified by the receiver or digital signature capture. Delivery boys are prohibited from leaving unattended parcels without explicit consignee approval.
+
+3. Redirection & Hold at Hub:
+Consignees may request parcels to be held at the nearest QuickShip Distribution Depot for self-collection for up to 7 calendar days.

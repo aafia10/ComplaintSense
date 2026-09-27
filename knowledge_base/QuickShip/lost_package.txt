@@ -1,0 +1,10 @@
+QuickShip Lost Package & Investigation Policy
+
+1. Reporting Undelivered Packages:
+If a package shows no tracking scans for 48 consecutive hours past the estimated delivery date, it is classified as 'Suspected Missing'. A tracer investigation is initiated immediately with local distribution hubs.
+
+2. Claim Verification Window:
+Tracer searches take up to 72 hours. If the parcel cannot be located within this window, QuickShip issues a Certificate of Lost Parcel to expedite merchant reimbursement or customer insurance payout.
+
+3. Maximum Liability & Compensation:
+Declared-value insured parcels are compensated at 100% invoice value up to ₹50,000 within 5 business days upon claim approval.

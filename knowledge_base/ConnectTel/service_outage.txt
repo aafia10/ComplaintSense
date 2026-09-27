@@ -1,0 +1,10 @@
+ConnectTel Broadband & Fiber Outage Compensation Policy
+
+1. Scheduled Maintenance & Fiber Cuts:
+Critical fiber optic backbone repairs are conducted between 01:00 and 05:00 local time. Subscribers are alerted via SMS 24 hours prior to scheduled downtime.
+
+2. Unplanned Outage Reporting:
+Unplanned optical line terminal (OLT) failure or accidental municipal fiber cuts affecting optical fiber broadband services must be reported via our automated portal or helpline.
+
+3. Automatic Pro-Rata Bill Credits:
+For continuous broadband outages lasting in excess of 24 consecutive hours, subscribers receive an automatic pro-rated daily fee waiver credited against their subsequent invoice.

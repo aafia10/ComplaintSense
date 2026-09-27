@@ -1,0 +1,13 @@
+CloudDesk Billing & Invoicing Policy
+
+1. Payment Methods:
+Corporate Credit Cards, ACH direct debit (US), SEPA direct debit (EU), and Net-30 invoicing for enterprise contracts exceeding $10,000 annually.
+
+2. Duplicate Charges & Billing Discrepancies:
+If your credit card is charged multiple times for the same monthly invoice or seat addition, our Finance desk validates transactions within 24 hours. Verified duplicate charges are reversed immediately, reflecting on statements within 3-5 business days.
+
+3. Tax Exemptions & Invoicing:
+VAT/GST numbers can be added under Organization Billing Profile to ensure tax-compliant reverse charge invoices. Updated invoices can be downloaded retroactively from the billing archive.
+
+4. Grace Period on Failed Payments:
+If payment fails upon cycle renewal, CloudDesk provides a 7-day grace period with daily email reminders before service enters restricted read-only mode.

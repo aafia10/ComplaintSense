@@ -1,0 +1,10 @@
+ConnectTel Subscriber Account & SIM Management Policy
+
+1. SIM Replacement & eSIM Migration:
+Subscribers can request an instant eSIM profile transfer or replacement physical SIM card at any authorized ConnectTel store with government photo identification.
+
+2. Mobile Number Portability (MNP):
+To port an existing number to ConnectTel or another operator, send 'PORT <10-digit-mobile-number>' to 1900. Porting codes remain valid for 4 days.
+
+3. Account Ownership Transfer:
+Ownership transfer between corporate entities or family members requires biometric KYC re-verification and clearance of all outstanding postpaid balances.

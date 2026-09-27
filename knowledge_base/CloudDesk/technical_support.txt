@@ -1,0 +1,11 @@
+CloudDesk Technical Support & Incident Escalation Policy
+
+1. Support Tiers:
+- Standard Support (Starter & Pro): Web ticket and email support with responses within 8 business hours.
+- Premium 24/7 Support (Enterprise): Dedicated account manager, private Slack/Teams channel, and guaranteed 1-hour critical response SLA.
+
+2. Bug Reporting & Diagnostics:
+When submitting technical issues regarding API timeouts, dashboard blank screens, or webhook drops, provide: browser version, developer console logs, error request IDs, and timestamp in UTC.
+
+3. Engineering Escalation:
+Critical production outages (Sev-1) are routed automatically to on-call infrastructure engineering. Regular software defect patches are released on bi-weekly deployment cycles.

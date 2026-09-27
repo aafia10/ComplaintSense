@@ -1,0 +1,10 @@
+ConnectTel Prepaid Recharge & Payment Policy
+
+1. Recharge Execution SLA:
+Digital prepaid recharges completed via UPI, debit card, or net banking should reflect on the subscriber account within 15 minutes.
+
+2. Failed Recharges with Bank Deduction:
+If your bank account was debited but the prepaid pack or data allowance was not credited to your ConnectTel number, the banking network normally auto-reconciles within 24 hours. Provide your bank UTR number and mobile number if the recharge status remains unfulfilled.
+
+3. Plan Expiry & Grace Periods:
+Incoming calls remain active for 7 days post plan expiration. Unused data roll-over benefits apply only when renewing an active pack prior to the midnight expiry threshold.

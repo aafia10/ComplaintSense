@@ -1,0 +1,13 @@
+CloudDesk Subscription & Plan Management Policy
+
+1. Subscription Plans & Billing Cycles:
+CloudDesk provides Starter, Professional, and Enterprise tiers billed on either a monthly or annual cycle. Subscriptions automatically renew at the conclusion of each billing period unless cancelled prior to renewal.
+
+2. Upgrades and Downgrades:
+Plan upgrades take effect immediately with prorated charges applied to the remaining days of the current cycle. Plan downgrades take effect at the conclusion of the active billing period without mid-cycle refunds.
+
+3. Cancellation:
+Administrators may cancel subscriptions anytime through Workspace Settings > Billing. Access to workspaces and projects remains active until the end of the paid term.
+
+4. Pausing Workspaces:
+Enterprise organizations may request a temporary workspace pause for up to 90 days with reduced data-retention pricing.

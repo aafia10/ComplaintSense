@@ -1,0 +1,10 @@
+CloudDesk Account Recovery & Access Security Policy
+
+1. Forgotten Passwords & MFA Reset:
+Users can initiate self-service password reset using registered primary corporate emails. If 2FA/MFA authenticator app access is lost, organizational workspace admins can issue a temporary recovery security token.
+
+2. SSO / SAML Lockouts:
+For enterprise SSO integrations (Okta, Azure AD, Google Workspace), SSO errors must be coordinated with your internal IT security administrator. CloudDesk support can temporarily enable break-glass password authentication upon verification of company domain ownership.
+
+3. Locked Accounts:
+Accounts undergo automatic lockout following 5 consecutive failed login attempts. Unlocking occurs automatically after 30 minutes, or instantly via the emailed security confirmation link.

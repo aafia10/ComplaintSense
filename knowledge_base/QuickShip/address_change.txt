@@ -1,0 +1,10 @@
+QuickShip Address Change & Re-Routing Policy
+
+1. Modification Window:
+Consignees may request delivery address alterations or contact telephone updates while the consignment is 'In Transit - Inter-City'. Once a parcel reaches the 'Out for Delivery' stage at the destination depot, changes incur a 24-hour delay.
+
+2. Pin Code Changes:
+Address changes within the same city postal circle are processed without extra charges. Re-routing to a different city requires generating a subsidiary consignment note and freight adjustment.
+
+3. Correction Procedures:
+Submit a ticket under Delivery & Logistics citing your Waybill ID (#QS-XXXXXX) along with the verified updated address and landmark.

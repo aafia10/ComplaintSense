@@ -1,0 +1,13 @@
+ShopEase Payment & Billing Policy
+
+1. Supported Payment Modes:
+Credit Cards (Visa, MasterCard, Amex), Debit Cards, UPI (Google Pay, PhonePe, Paytm), Net Banking, and Cash on Delivery (COD).
+
+2. Double Debits & Failed Transactions:
+In the event that an amount is debited from the customer's account or card but the order status displays 'Payment Failed' or 'Order Pending', payment gateways typically auto-reconcile within 24 to 48 hours. If funds are not auto-reversed within 3 business days, provide the transaction reference ID (UTR or Gateway Ref ID) for manual finance reconciliation.
+
+3. Payment Gateway Timeouts:
+Payment timeouts during peak sale windows are investigated by the Finance operations team. Once verified, either order fulfillment is initiated or a prompt refund is issued.
+
+4. Fraud Protection & Security:
+All transactions are secured with 256-bit SSL encryption and mandatory multi-factor authentication (OTP/3DSecure).

@@ -1,0 +1,174 @@
+{
+  "status": "evaluated",
+  "sample_count": 77,
+  "models": {
+    "Naive Bayes": {
+      "accuracy": 0.6241,
+      "precision": 0.597,
+      "recall": 0.6241,
+      "f1_score": 0.5652
+    },
+    "Logistic Regression": {
+      "accuracy": 0.5333,
+      "precision": 0.4107,
+      "recall": 0.5333,
+      "f1_score": 0.4162
+    },
+    "Linear SVM": {
+      "accuracy": 0.6241,
+      "precision": 0.5546,
+      "recall": 0.6241,
+      "f1_score": 0.5512
+    }
+  },
+  "classes": [
+    "Account & Login",
+    "Billing & Refund",
+    "Delivery & Logistics",
+    "General Inquiry",
+    "Legal & Compliance",
+    "Product Defect",
+    "Technical Support"
+  ],
+  "confusion_matrix": {
+    "classes": [
+      "Account",
+      "Billing",
+      "Delivery",
+      "General",
+      "Legal",
+      "Product",
+      "Technical"
+    ],
+    "full_classes": [
+      "Account & Login",
+      "Billing & Refund",
+      "Delivery & Logistics",
+      "General Inquiry",
+      "Legal & Compliance",
+      "Product Defect",
+      "Technical Support"
+    ],
+    "matrix": [
+      [
+        6,
+        1,
+        1,
+        0,
+        0,
+        1,
+        1
+      ],
+      [
+        0,
+        13,
+        0,
+        0,
+        0,
+        1,
+        1
+      ],
+      [
+        0,
+        0,
+        15,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        7,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        2,
+        1,
+        0,
+        4,
+        1,
+        0
+      ],
+      [
+        0,
+        1,
+        2,
+        0,
+        1,
+        8,
+        0
+      ],
+      [
+        1,
+        3,
+        1,
+        0,
+        1,
+        2,
+        2
+      ]
+    ]
+  },
+  "classification_report": {
+    "Account & Login": {
+      "precision": 0.857,
+      "recall": 0.6,
+      "f1_score": 0.706,
+      "support": 10.0
+    },
+    "Billing & Refund": {
+      "precision": 0.481,
+      "recall": 0.867,
+      "f1_score": 0.619,
+      "support": 15.0
+    },
+    "Delivery & Logistics": {
+      "precision": 0.75,
+      "recall": 1.0,
+      "f1_score": 0.857,
+      "support": 15.0
+    },
+    "General Inquiry": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1_score": 0.0,
+      "support": 7.0
+    },
+    "Legal & Compliance": {
+      "precision": 0.667,
+      "recall": 0.5,
+      "f1_score": 0.571,
+      "support": 8.0
+    },
+    "Product Defect": {
+      "precision": 0.615,
+      "recall": 0.667,
+      "f1_score": 0.64,
+      "support": 12.0
+    },
+    "Technical Support": {
+      "precision": 0.5,
+      "recall": 0.2,
+      "f1_score": 0.286,
+      "support": 10.0
+    },
+    "macro avg": {
+      "precision": 0.553,
+      "recall": 0.548,
+      "f1_score": 0.526,
+      "support": 77.0
+    },
+    "weighted avg": {
+      "precision": 0.581,
+      "recall": 0.623,
+      "f1_score": 0.575,
+      "support": 77.0
+    }
+  }
+}

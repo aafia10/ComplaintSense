@@ -1,0 +1,13 @@
+CloudDesk Service Level Agreement (SLA) & Uptime Policy
+
+1. Guaranteed Service Availability:
+CloudDesk guarantees 99.9% monthly uptime for all Enterprise tier production services, excluding scheduled maintenance windows notified at least 72 hours in advance.
+
+2. SLA Service Credits:
+In the event that monthly uptime falls below 99.9%, customers are eligible for service credits on their subsequent subscription invoice:
+- 99.0% to 99.89%: 10% credit
+- 95.0% to 98.99%: 25% credit
+- Below 95.0%: 50% credit
+
+3. Data Retention & Backups:
+Continuous snapshots are retained for 30 days. Customers may export workspace data in JSON/CSV formats at any time.

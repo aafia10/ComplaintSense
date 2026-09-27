@@ -1,0 +1,10 @@
+QuickShip Shipping & Freight Policy
+
+1. Shipping Services:
+QuickShip provides Standard Surface Freight, Express Air Cargo, and Same-Day Metro Courier services across domestic distribution corridors.
+
+2. Tracking & Manifests:
+Each shipment is assigned a unique Waybill / Tracking ID (format: #QS-XXXXXX or #ORD-XXXXX). Real-time GPS checkpoints are recorded at departure hubs, sorting centers, and last-mile dispatch depots.
+
+3. Delays & Service Disruptions:
+In cases of severe weather, regional road closures, or hub sorting congestions, shipment status is marked as 'In Transit - Exception'. Customers are notified via SMS/email with a revised delivery estimate within 6 hours.

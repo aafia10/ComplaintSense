@@ -1,0 +1,10 @@
+ConnectTel Network Support & Coverage Resolution Policy
+
+1. Signal Drops & Low Connectivity:
+Customers experiencing call drops, distorted audio, or weak 4G/5G mobile signals can raise a Technical Support complaint mentioning their primary geographic area (city, sector/locality, pincode) and handset model.
+
+2. Tower Diagnostics & Field Engineering:
+Cellular site telemetry diagnostics are executed within 4 hours of ticket submission. If an RF antenna tilt or degraded base transceiver station (BTS) is detected, field RF engineers are dispatched with a 24-48 hour resolution turnaround.
+
+3. Indoor Coverage Boosters:
+For enterprise premises or residential high-rises with verified structural RF shielding, ConnectTel provides subsidized micro-femtocells or Wi-Fi Calling (VoWiFi) configuration assistance.
