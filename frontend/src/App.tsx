@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Navbar } from './components/Navbar';
+import { AppLayout } from './components/AppLayout';
 import { DemoModal } from './components/DemoModal';
 import { NewComplaintModal } from './components/NewComplaintModal';
 import { LandingPage } from './pages/LandingPage';
-import { DashboardPage } from './pages/DashboardPage';
+import { OverviewPage } from './pages/OverviewPage';
 import { ComplaintsPage } from './pages/ComplaintsPage';
 import { ComplaintDetailPage } from './pages/ComplaintDetailPage';
 import { IntelligencePage } from './pages/IntelligencePage';
-import { NLPAnalysisPage } from './pages/NLPAnalysisPage';
-import { ModelEvaluationPage } from './pages/ModelEvaluationPage';
 import { KnowledgeBasePage } from './pages/KnowledgeBasePage';
+import { NLPLabPage } from './pages/NLPLabPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { fetchApi, Workspace, TicketDetail } from './api/client';
 
@@ -33,7 +32,6 @@ export const App: React.FC = () => {
       const wsList = await fetchApi<Workspace[]>('/workspaces');
       setWorkspaces(wsList);
       if (wsList.length > 0) {
-        // Default to ShopEase if found, else first workspace
         const shopEase = wsList.find((w) => w.id === 'shopease') || wsList[0];
         setActiveWorkspace(shopEase);
       }
@@ -48,7 +46,7 @@ export const App: React.FC = () => {
     setActiveWorkspace(ws);
     setIsDemoModalOpen(false);
     setSelectedTicketId(null);
-    setCurrentTab('dashboard');
+    setCurrentTab('overview');
   };
 
   const handleOpenTicket = (ticketId: string) => {
@@ -67,12 +65,27 @@ export const App: React.FC = () => {
     setCurrentTab('complaints');
   };
 
+  const handleNavigateToIntelligence = () => {
+    setSelectedTicketId(null);
+    setCurrentTab('intelligence');
+  };
+
+  const handleResetDemoData = async () => {
+    await fetchApi('/data/reset-demo', { method: 'POST' });
+    await loadWorkspaces();
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
-      
-      {/* Navigation Bar */}
-      {currentTab !== 'landing' && (
-        <Navbar
+    <>
+      {currentTab === 'landing' ? (
+        <LandingPage
+          onExploreDemo={() => setIsDemoModalOpen(true)}
+          onSelectWorkspace={handleSelectWorkspace}
+          workspaces={workspaces}
+          onCreateWorkspace={() => setIsDemoModalOpen(true)}
+        />
+      ) : (
+        <AppLayout
           currentTab={currentTab}
           setCurrentTab={(tab) => {
             setSelectedTicketId(null);
@@ -83,72 +96,65 @@ export const App: React.FC = () => {
           onSelectWorkspace={handleSelectWorkspace}
           onOpenDemoModal={() => setIsDemoModalOpen(true)}
           onOpenNewComplaint={() => setIsNewComplaintOpen(true)}
-        />
+          onResetDemo={handleResetDemoData}
+        >
+          {activeWorkspace && (
+            <>
+              {(currentTab === 'overview' || currentTab === 'dashboard') && (
+                <OverviewPage
+                  activeWorkspace={activeWorkspace}
+                  onNavigateToComplaints={handleNavigateToComplaints}
+                  onNavigateToIntelligence={handleNavigateToIntelligence}
+                  onSelectTicket={handleOpenTicket}
+                />
+              )}
+
+              {currentTab === 'complaints' && (
+                <ComplaintsPage
+                  activeWorkspace={activeWorkspace}
+                  onSelectTicket={handleOpenTicket}
+                  onOpenNewComplaint={() => setIsNewComplaintOpen(true)}
+                  initialCategoryFilter={complaintCategoryFilter}
+                />
+              )}
+
+              {currentTab === 'detail' && selectedTicketId && (
+                <ComplaintDetailPage
+                  ticketId={selectedTicketId}
+                  activeWorkspace={activeWorkspace}
+                  onBack={() => setCurrentTab('complaints')}
+                  onSelectTicket={handleOpenTicket}
+                />
+              )}
+
+              {currentTab === 'intelligence' && (
+                <IntelligencePage
+                  activeWorkspace={activeWorkspace}
+                  onSelectTicket={handleOpenTicket}
+                />
+              )}
+
+              {currentTab === 'knowledge' && (
+                <KnowledgeBasePage activeWorkspace={activeWorkspace} />
+              )}
+
+              {currentTab === 'nlp' && (
+                <NLPLabPage activeWorkspace={activeWorkspace} />
+              )}
+
+              {currentTab === 'settings' && (
+                <SettingsPage
+                  activeWorkspace={activeWorkspace}
+                  onWorkspaceUpdated={(updated) => {
+                    setActiveWorkspace(updated);
+                    loadWorkspaces();
+                  }}
+                />
+              )}
+            </>
+          )}
+        </AppLayout>
       )}
-
-      {/* Main Content Area */}
-      <main className="flex-1">
-        {currentTab === 'landing' && (
-          <LandingPage
-            onExploreDemo={() => setIsDemoModalOpen(true)}
-            onSelectWorkspace={handleSelectWorkspace}
-            workspaces={workspaces}
-            onCreateWorkspace={() => setIsDemoModalOpen(true)}
-          />
-        )}
-
-        {currentTab === 'dashboard' && activeWorkspace && (
-          <DashboardPage
-            activeWorkspace={activeWorkspace}
-            onNavigateToComplaints={handleNavigateToComplaints}
-            onSelectTicket={handleOpenTicket}
-          />
-        )}
-
-        {currentTab === 'complaints' && activeWorkspace && (
-          <ComplaintsPage
-            activeWorkspace={activeWorkspace}
-            onSelectTicket={handleOpenTicket}
-            onOpenNewComplaint={() => setIsNewComplaintOpen(true)}
-            initialCategoryFilter={complaintCategoryFilter}
-          />
-        )}
-
-        {currentTab === 'detail' && selectedTicketId && activeWorkspace && (
-          <ComplaintDetailPage
-            ticketId={selectedTicketId}
-            activeWorkspace={activeWorkspace}
-            onBack={() => setCurrentTab('complaints')}
-            onSelectTicket={handleOpenTicket}
-          />
-        )}
-
-        {currentTab === 'intelligence' && activeWorkspace && (
-          <IntelligencePage activeWorkspace={activeWorkspace} />
-        )}
-
-        {currentTab === 'nlp' && activeWorkspace && (
-          <NLPAnalysisPage activeWorkspace={activeWorkspace} />
-        )}
-
-        {currentTab === 'evaluation' && (
-          <ModelEvaluationPage />
-        )}
-
-        {currentTab === 'knowledge' && activeWorkspace && (
-          <KnowledgeBasePage activeWorkspace={activeWorkspace} />
-        )}
-
-        {currentTab === 'settings' && activeWorkspace && (
-          <SettingsPage
-            activeWorkspace={activeWorkspace}
-            onWorkspaceUpdated={(updated) => {
-              setActiveWorkspace(updated);
-              loadWorkspaces();
-            }}
-          />
-        )}
-      </main>
 
       {/* Demo Selection Modal */}
       <DemoModal
@@ -167,8 +173,7 @@ export const App: React.FC = () => {
           onComplaintCreated={handleComplaintCreated}
         />
       )}
-
-    </div>
+    </>
   );
 };
 

@@ -40,3 +40,10 @@ def recommend_department_and_action(category: str, intent: str, urgency_level: s
         rec_action = f"[PRIORITY] {rec_action} within 4-hour SLA"
 
     return rec_dept, rec_action
+
+def route_department(category: str, intent: str, urgency_level: str = "Medium"):
+    dept, action = recommend_department_and_action(category, intent, urgency_level)
+    return {
+        "recommended_department": dept,
+        "recommended_action": action
+    }

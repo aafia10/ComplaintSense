@@ -141,53 +141,71 @@ When opening the **Dashboard** or **Management Intelligence** page, the system a
 complaintsense/
 ├── backend/
 │   ├── app/
-│   │   ├── api/                  # REST API routers (workspaces, tickets, intelligence, etc.)
+│   │   ├── api/                  # REST API routers (workspaces, tickets, intelligence, data, etc.)
+│   │   │   ├── tickets.py        # Ticket endpoints with feedback, duplicate check, tone selector
+│   │   │   ├── intelligence.py   # Overview (7d/30d/90d), products, customers, trends
+│   │   │   ├── knowledge.py      # Knowledge documents and automated gap detector
+│   │   │   ├── evaluation.py     # Model comparisons, explainability, model health
+│   │   │   └── data.py           # DB backup, CSV export, validation & bulk ingestion
 │   │   ├── database/             # SQLite connection and session management
-│   │   ├── models/               # SQLAlchemy ORM models (Workspace, Ticket, Entity, etc.)
+│   │   ├── models/               # SQLAlchemy ORM models (Workspace, Ticket, FeedbackRecord, etc.)
+│   │   ├── repositories/         # Decoupled data access layer:
+│   │   │   ├── base.py           # Generic BaseRepository with pagination & filtering
+│   │   │   ├── ticket_repository.py # Ticket queries, period-over-period stats, low-confidence
+│   │   │   ├── workspace_repository.py # Multi-tenant workspace management
+│   │   │   ├── knowledge_repository.py # Knowledge document CRUD & search
+│   │   │   └── feedback_repository.py  # Human feedback audit trail & metrics
 │   │   ├── schemas/              # Pydantic request and response schemas
 │   │   ├── services/             # Core business logic and NLP ticket orchestration
 │   │   ├── nlp/                  # Modular NLP implementations:
 │   │   │   ├── preprocessing.py  # Cleaning, tokenizing, stopwords, lemmatizing
 │   │   │   ├── tfidf.py          # Vectorizer configuration and vocabulary extraction
 │   │   │   ├── classification.py # Naive Bayes, Logistic Regression, Linear SVM
+│   │   │   ├── explainability.py # Top TF-IDF drivers, logit contributions & rule factors
+│   │   │   ├── duplicates.py     # Cosine duplicate detection engine (threshold >= 0.82)
 │   │   │   ├── intent.py         # Topic vs Intent disambiguation engine
 │   │   │   ├── sentiment.py      # VADER polarity & emotional tone mapping
 │   │   │   ├── urgency.py        # Transparent 0-100 urgency signal engine
 │   │   │   ├── ner.py            # Hybrid Named Entity Recognition
 │   │   │   └── similarity.py     # TF-IDF cosine similarity search
-│   │   ├── intelligence/         # Clustering, period trend calculation, root cause
+│   │   ├── intelligence/         # Clustering, trends, root cause, product & customer risk
+│   │   │   ├── products.py       # Product defect rate & return risk scoring
+│   │   │   └── customers.py      # Churn risk & repeat complainant intelligence
 │   │   ├── routing/              # Department recommendation mapping
-│   │   ├── knowledge/            # Local TF-IDF policy document retrieval
-│   │   ├── response_generator/   # Local empathetic template response builder
+│   │   ├── knowledge/            # Local TF-IDF policy retrieval & gap detector
+│   │   │   ├── retriever.py      # Context-grounded policy snippet extraction
+│   │   │   └── gap_detector.py   # Uncovered complaint cluster identification & SOP drafts
+│   │   ├── response_generator/   # Local empathetic template response builder:
+│   │   │   └── generator.py      # Multi-tone generation & real-time quality validation
 │   │   └── main.py               # FastAPI entry point with CORS middleware
-│   ├── tests/                    # Automated pytest suite (NLP, intelligence, API)
+│   ├── tests/                    # Automated pytest suite (NLP, intelligence, API, enhancements)
+│   ├── run_tests.py              # Programmatic test runner script
 │   └── requirements.txt          # Python dependencies
 ├── frontend/
 │   ├── src/
 │   │   ├── api/client.ts         # TypeScript API fetch client and schema types
-│   │   ├── components/           # Navbar, DemoModal, NewComplaintModal
+│   │   ├── components/           # AppLayout, Sidebar, TopBar, CsvImportModal, Modals
 │   │   ├── pages/
-│   │   │   ├── LandingPage.tsx   # Product landing and hero experience
-│   │   │   ├── DashboardPage.tsx # KPIs, volume timeline, emerging issues alert
-│   │   │   ├── ComplaintsPage.tsx# Filterable, searchable complaints data grid
-│   │   │   ├── ComplaintDetailPage.tsx # 3-column dossier with inspection tabs
-│   │   │   ├── IntelligencePage.tsx    # Management root-cause and geo analytics
-│   │   │   ├── NLPAnalysisPage.tsx     # Academic pipeline decomposition laboratory
-│   │   │   ├── ModelEvaluationPage.tsx # Empirical metrics and confusion matrices
-│   │   │   ├── KnowledgeBasePage.tsx   # Local policy document browser & search
-│   │   │   └── SettingsPage.tsx        # Company categories & department manager
-│   │   ├── App.tsx               # Main state router
+│   │   │   ├── LandingPage.tsx   # Product landing with calm emerald theme
+│   │   │   ├── OverviewPage.tsx  # Executive dashboard with 7d/30d/90d period KPIs
+│   │   │   ├── ComplaintsPage.tsx# 8-column data grid, "Needs Review" filter, CSV bulk import
+│   │   │   ├── ComplaintDetailPage.tsx # 3-column dossier, duplicate alert, tone variations, quality check, feedback
+│   │   │   ├── IntelligencePage.tsx    # Trends, recurring issues drilldown, products & customers
+│   │   │   ├── NLPLabPage.tsx          # 5-tab unified laboratory (Explain, Compare, Metrics, Pipeline, Health)
+│   │   │   ├── KnowledgeBasePage.tsx   # Knowledge gap detector, SOP drafter, document browser
+│   │   │   └── SettingsPage.tsx        # Profile, categories, departments, Data Operations & DB backup
+│   │   ├── App.tsx               # Application routing and layout integration
 │   │   ├── index.css             # Tailwind CSS directives
 │   │   └── main.tsx              # React DOM root
 │   ├── package.json
 │   └── tsconfig.json
-├── knowledge_base/               # 20 Local TXT policy documents across 4 demo companies
+├── knowledge_base/               # Local policy documents across demo companies
 ├── models/                       # Serialized joblib classifiers and TF-IDF vectorizer
 ├── evaluation/                   # Saved empirical evaluation metrics (metrics.json)
 ├── scripts/
 │   ├── train_classifier.py       # Trains Naive Bayes, Logistic Regression, Linear SVM
 │   ├── evaluate_models.py        # Computes cross-validated precision, recall, F1, CM
-│   └── seed_demo.py              # Seeds 4 companies, trains models, runs NLP pipeline
+│   └── seed_demo.py              # Seeds companies, trains models, runs NLP pipeline
 ├── complaintsense.db             # Local SQLite database
 └── README.md
 ```
@@ -261,31 +279,42 @@ npm run dev
 
 ## 8. Automated Verification & Testing
 
-To run the automated backend test suite covering NLP modules, intelligence calculations, and API endpoints:
+To run the automated backend test suite covering NLP modules, intelligence calculations, repositories, feedback, explainability, response quality, and API endpoints:
 ```bash
-cd backend
-venv\Scripts\pytest tests -v
+# From project root:
+backend\venv\Scripts\python backend/run_tests.py
 ```
+*(Or directly run `pytest tests -v` inside `backend` with the active venv).*
 
 Expected result:
 ```text
-tests/test_api.py::test_api_root PASSED [ 6%]
-tests/test_api.py::test_get_workspaces PASSED [ 13%]
-tests/test_api.py::test_get_dashboard_stats PASSED [ 20%]
-tests/test_api.py::test_create_and_fetch_ticket PASSED [ 26%]
-tests/test_api.py::test_evaluation_metrics PASSED [ 33%]
-tests/test_intelligence.py::test_trend_calculation PASSED [ 40%]
-tests/test_intelligence.py::test_period_over_period PASSED [ 46%]
-tests/test_intelligence.py::test_root_cause_pattern PASSED [ 53%]
-tests/test_nlp.py::test_preprocessing PASSED [ 60%]
-tests/test_nlp.py::test_sentiment_analysis PASSED [ 66%]
-tests/test_nlp.py::test_urgency_signals PASSED [ 73%]
-tests/test_nlp.py::test_intent_detection PASSED [ 80%]
-tests/test_nlp.py::test_named_entity_recognition PASSED [ 86%]
-tests/test_nlp.py::test_classification PASSED [ 93%]
-tests/test_nlp.py::test_similarity_search PASSED [100%]
+============================= test session starts =============================
+platform win32 -- Python 3.13.9, pytest-9.1.1, pluggy-1.6.0
+collected 21 items
 
-======================= 15 passed in 2.50s =======================
+backend/tests/test_api.py::test_api_root PASSED                          [  4%]
+backend/tests/test_api.py::test_get_workspaces PASSED                    [  9%]
+backend/tests/test_api.py::test_get_dashboard_stats PASSED               [ 14%]
+backend/tests/test_api.py::test_create_and_fetch_ticket PASSED           [ 19%]
+backend/tests/test_api.py::test_evaluation_metrics PASSED                [ 23%]
+backend/tests/test_enhancements.py::test_ticket_repository_kpis PASSED   [ 28%]
+backend/tests/test_enhancements.py::test_duplicate_detection PASSED      [ 33%]
+backend/tests/test_enhancements.py::test_nlp_explainability PASSED       [ 38%]
+backend/tests/test_enhancements.py::test_response_tone_and_quality PASSED [ 42%]
+backend/tests/test_enhancements.py::test_knowledge_gap_detector PASSED   [ 47%]
+backend/tests/test_enhancements.py::test_feedback_repository PASSED      [ 52%]
+backend/tests/test_intelligence.py::test_trend_calculation PASSED        [ 57%]
+backend/tests/test_intelligence.py::test_period_over_period PASSED       [ 61%]
+backend/tests/test_intelligence.py::test_root_cause_pattern PASSED       [ 66%]
+backend/tests/test_nlp.py::test_preprocessing PASSED                     [ 71%]
+backend/tests/test_nlp.py::test_sentiment_analysis PASSED                [ 76%]
+backend/tests/test_nlp.py::test_urgency_signals PASSED                   [ 80%]
+backend/tests/test_nlp.py::test_intent_detection PASSED                  [ 85%]
+backend/tests/test_nlp.py::test_named_entity_recognition PASSED          [ 90%]
+backend/tests/test_nlp.py::test_classification PASSED                    [ 95%]
+backend/tests/test_nlp.py::test_similarity_search PASSED                 [100%]
+
+====================== 21 passed in 18.35s =======================
 ```
 
 To test the frontend production build:
@@ -293,10 +322,50 @@ To test the frontend production build:
 cd frontend
 npm run build
 ```
+*(Produces a zero-error optimized bundle in `frontend/dist`).*
 
 ---
 
-## 9. Model Evaluation & Metrics
+## 9. Advanced SaaS Intelligence Capabilities
+
+ComplaintSense implements a complete enterprise SaaS intelligence workflow:
+
+### 1. Repository Pattern & Clean Decoupled Architecture
+- `BaseRepository`: Generic CRUD with pagination, ordering, and workspace scoping.
+- `TicketRepository`: Specialized ticket queries, period-over-period aggregate metrics, and low-confidence filtering.
+- `FeedbackRepository`: Captures human review corrections for continuous model monitoring.
+- `KnowledgeRepository` & `WorkspaceRepository`: Manage policies and multi-tenant configurations.
+
+### 2. Multi-Tone Response Generation & Real-Time Quality Check
+- **4 Support Tones**: `Professional`, `Empathetic`, `Concise`, and `Formal`.
+- **Response Quality Rules Engine**: Real-time evaluation verifying:
+  - Greeting presence
+  - Direct intent acknowledgment
+  - Entity referencing (Order ID, Amount, Product)
+  - Clear next steps and SLA commitments
+  - Professional agent sign-off
+
+### 3. Transparent NLP Explainability
+- Top TF-IDF n-gram drivers with positive/negative logit contributions.
+- Urgency score breakdown across 5 signal families (Legal, Financial, Time Pressure, Repeat, Safety).
+- Intent classification trigger phrases and keyword matches.
+
+### 4. Automated Knowledge Gap Detection
+- Identifies complaint clusters that lack matching internal SOP documentation.
+- One-click **"Draft SOP"** generation producing structured policy templates.
+
+### 5. Product & Customer Risk Intelligence
+- **Product Risk Index**: Calculates return risk, defect rate, and financial impact by SKU.
+- **Customer Churn Risk**: Identifies repeat complainants, tracks sentiment trajectories, and flags high-risk accounts.
+
+### 6. Data Operations & Disaster Recovery
+- **One-Click SQLite Backup**: `GET /api/data/export-db` streams the database snapshot.
+- **CSV Data Pipeline**: 3-step bulk ingestion modal (Upload $\to$ Validate & Preview $\to$ Batch NLP Ingestion).
+- **Demo Reset**: Instant restoration of baseline demo datasets.
+
+---
+
+## 10. Model Evaluation & Metrics
 
 ComplaintSense values academic honesty. Classifier metrics are generated from stratified cross-validation on real complaint text rather than fabricated placeholders.
 
@@ -307,11 +376,11 @@ ComplaintSense values academic honesty. Classifier metrics are generated from st
 | **Logistic Regression** | 53.3% | 41.1% | 53.3% | 41.6% |
 | **Linear SVM (Calibrated)** | **62.4%** | **55.5%** | **62.4%** | **55.1%** |
 
-*Confusion matrices and class-level breakdown reports can be inspected visually on the **Model Evaluation** page.*
+*Confusion matrices and class-level breakdown reports can be inspected visually on the **NLP Lab → Model Comparison / Confusion Matrix** tabs.*
 
 ---
 
-## 10. Future SaaS Roadmap (Phase 2)
+## 11. Future SaaS Roadmap (Phase 2)
 
 While the local MVP provides a complete, polished, functional intelligence pipeline, the architecture is designed to scale into a commercial multi-tenant SaaS:
 
@@ -323,6 +392,7 @@ While the local MVP provides a complete, polished, functional intelligence pipel
 
 ---
 
-## 11. License
+## 12. License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+

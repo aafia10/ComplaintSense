@@ -95,3 +95,66 @@ def search_knowledge(
     ]
     results = retrieve_relevant_knowledge(q, workspace_id, db_docs_dicts, top_k=5)
     return results
+
+from app.models.ticket import Ticket
+from app.intelligence.recurring import analyze_recurring_issues
+from app.knowledge.gap_detector import detect_knowledge_gaps
+
+@router.get("/gaps")
+def get_knowledge_gaps_endpoint(
+    workspace_id: str = Query(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Identifies high-frequency customer complaint issues that lack adequate policy
+    documentation in the workspace knowledge base.
+    """
+    # 1. Fetch tickets and recurring issues
+    tickets = db.query(Ticket).filter(Ticket.workspace_id == workspace_id).all()
+    ticket_dicts = [
+        {"id": t.id, "category": t.category, "intent": t.intent, "created_at": t.created_at, "message": t.message, "subject": t.subject}
+        for t in tickets
+    ]
+    recurring_issues = analyze_recurring_issues(ticket_dicts)
+
+    # 2. Fetch all docs (disk + db)
+    disk_docs = get_workspace_documents_from_disk(workspace_id)
+    db_docs = db.query(KnowledgeDocument).filter(KnowledgeDocument.workspace_id == workspace_id).all()
+    
+    all_docs = []
+    seen_files = set()
+    for d in disk_docs:
+        all_docs.append(KnowledgeDocument(
+            id=d.get("id", 0),
+            workspace_id=workspace_id,
+            title=d["title"],
+            filename=d["filename"],
+            content=d["content"],
+            category=d.get("category", "Policy")
+        ))
+        seen_files.add(d["filename"])
+        
+    for d in db_docs:
+        if d.filename not in seen_files:
+            all_docs.append(d)
+
+    # Transform recurring issues format for gap detector
+    clusters_formatted = [
+        {
+            "cluster_id": r["cluster_id"],
+            "cluster_title": r["cluster_name"],
+            "dominant_category": r["category"],
+            "common_intent": r.get("intent", ""),
+            "summary": f"{r.get('possible_root_cause', '')} {r.get('affected_entity', '')} {r.get('affected_location', '')}",
+            "ticket_count": r["complaint_count"],
+            "average_urgency_level": "critical" if r.get("is_emerging") else "medium"
+        }
+        for r in recurring_issues
+    ]
+
+    gaps = detect_knowledge_gaps(clusters_formatted, all_docs, threshold=0.35)
+    return {
+        "workspace_id": workspace_id,
+        "total_gaps_identified": len(gaps),
+        "gaps": gaps
+    }

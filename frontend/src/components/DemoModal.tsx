@@ -20,36 +20,36 @@ export const DemoModal: React.FC<DemoModalProps> = ({
   const getIcon = (industry: string) => {
     switch (industry.toLowerCase()) {
       case 'e-commerce':
-        return <ShoppingBag className="w-6 h-6 text-indigo-600" />;
+        return <ShoppingBag className="w-5 h-5 text-emerald-700" />;
       case 'saas':
-        return <Cloud className="w-6 h-6 text-sky-600" />;
+        return <Cloud className="w-5 h-5 text-sky-600" />;
       case 'logistics':
-        return <Truck className="w-6 h-6 text-emerald-600" />;
+        return <Truck className="w-5 h-5 text-amber-600" />;
       case 'telecommunications':
       case 'telecom':
-        return <Radio className="w-6 h-6 text-purple-600" />;
+        return <Radio className="w-5 h-5 text-emerald-800" />;
       default:
-        return <ShoppingBag className="w-6 h-6 text-gray-600" />;
+        return <ShoppingBag className="w-5 h-5 text-slate-600" />;
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 border border-gray-100 overflow-hidden relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-2xs p-4">
+      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-6 border border-slate-200 overflow-hidden relative">
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 transition"
+          className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 transition cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
 
         <div className="mb-6">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 mb-2">
-            <span>Pre-Configured Environments</span>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/50 mb-2">
+            <span>Preconfigured Enterprise Workspaces</span>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900">Explore Demo Workspaces</h2>
-          <p className="text-sm text-gray-500 mt-1">
-            ComplaintSense adapts across multi-sector enterprises. Choose an industry environment with real seeded complaints and local knowledge policies.
+          <h2 className="text-xl font-bold text-slate-900">Explore Demo Workspaces</h2>
+          <p className="text-xs text-slate-500 mt-1">
+            Choose an industry environment with pre-seeded complaints, knowledge base policies, and active anomaly clusters.
           </p>
         </div>
 
@@ -58,39 +58,39 @@ export const DemoModal: React.FC<DemoModalProps> = ({
             <div
               key={ws.id}
               onClick={() => onSelectWorkspace(ws)}
-              className="group p-5 rounded-xl border border-gray-200 hover:border-indigo-500 hover:shadow-lg hover:shadow-indigo-50 transition-all cursor-pointer bg-white relative flex flex-col justify-between"
+              className="group p-4 rounded-xl border border-slate-200 hover:border-emerald-600 hover:shadow-sm transition-all cursor-pointer bg-white relative flex flex-col justify-between"
             >
               <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="p-2.5 rounded-lg bg-gray-50 group-hover:bg-indigo-50/50 transition">
+                <div className="flex items-center justify-between mb-2.5">
+                  <div className="p-2 rounded-lg bg-slate-50 group-hover:bg-emerald-50 transition">
                     {getIcon(ws.industry)}
                   </div>
-                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
                     {ws.industry}
                   </span>
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 group-hover:text-indigo-600 transition">
+                <h3 className="text-sm font-bold text-slate-900 group-hover:text-emerald-800 transition">
                   {ws.name}
                 </h3>
-                <p className="text-xs text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">
+                <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
                   {ws.description}
                 </p>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs font-medium text-indigo-600">
-                <span>{ws.ticket_count || 50}+ Seeded Complaints</span>
-                <span className="flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                  Open Workspace <ArrowRight className="w-3.5 h-3.5" />
+              <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs font-medium text-emerald-700">
+                <span>{ws.ticket_count || 45}+ Complaints</span>
+                <span className="flex items-center gap-1 group-hover:translate-x-0.5 transition-transform font-semibold">
+                  Launch Demo <ArrowRight className="w-3.5 h-3.5" />
                 </span>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="mt-6 pt-4 border-t border-gray-100 flex justify-end">
+        <div className="mt-6 pt-4 border-t border-slate-100 flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition"
+            className="px-4 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 transition cursor-pointer"
           >
             Cancel
           </button>

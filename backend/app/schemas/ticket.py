@@ -47,6 +47,11 @@ class TicketListItem(BaseModel):
     class Config:
         from_attributes = True
 
+class FeedbackCreate(BaseModel):
+    corrected_category: Optional[str] = None
+    corrected_intent: Optional[str] = None
+    notes: Optional[str] = None
+
 class TicketDetail(TicketListItem):
     message: str
     sentiment_score: Optional[float] = None
@@ -60,6 +65,9 @@ class TicketDetail(TicketListItem):
     relevant_knowledge: List[KnowledgeDocResult] = []
     preprocessed_tokens: List[str] = []
     lemmatized_text: Optional[str] = None
+    duplicate_warning: Optional[Dict[str, Any]] = None
+    quality_check: Optional[Dict[str, Any]] = None
+    feedbacks: List[Dict[str, Any]] = []
 
     class Config:
         from_attributes = True

@@ -1,12 +1,14 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import app.models  # register all models for table creation
 from app.database.session import engine, Base
 from app.api.workspaces import router as workspaces_router
 from app.api.tickets import router as tickets_router
 from app.api.intelligence import router as intelligence_router
 from app.api.evaluation import router as evaluation_router
 from app.api.knowledge import router as knowledge_router
+from app.api.data import router as data_router
 
 # Ensure tables are created
 Base.metadata.create_all(bind=engine)
@@ -32,6 +34,7 @@ app.include_router(tickets_router, prefix="/api")
 app.include_router(intelligence_router, prefix="/api")
 app.include_router(evaluation_router, prefix="/api")
 app.include_router(knowledge_router, prefix="/api")
+app.include_router(data_router, prefix="/api")
 
 @app.get("/")
 def root():

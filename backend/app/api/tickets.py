@@ -1,16 +1,17 @@
 import uuid
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, desc
 from app.database.session import get_db
-from app.models import Ticket, Prediction, Entity, SimilarComplaint, TicketResponse, KnowledgeDocument
-from app.schemas.ticket import TicketCreate, TicketUpdate, TicketListItem, TicketDetail
+from app.models import Ticket, Prediction, Entity, SimilarComplaint, TicketResponse, KnowledgeDocument, FeedbackRecord
+from app.schemas.ticket import TicketCreate, TicketUpdate, TicketListItem, TicketDetail, FeedbackCreate
 from app.schemas.nlp import FullAnalysisResult, SimilarTicketResult, EntityResult, KnowledgeDocResult
 from app.services.ticket_service import process_ticket_nlp
 from app.knowledge.retriever import retrieve_relevant_knowledge
-from app.response_generator.generator import generate_response_draft
+from app.response_generator.generator import generate_response_draft, check_response_quality
+from app.nlp.duplicates import detect_duplicate
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 
@@ -24,6 +25,7 @@ def list_tickets(
     department: Optional[str] = None,
     status: Optional[str] = None,
     search: Optional[str] = None,
+    needs_review: Optional[bool] = None,
     limit: int = 100,
     offset: int = 0,
     db: Session = Depends(get_db)
@@ -43,9 +45,12 @@ def list_tickets(
     if status:
         query = query.filter(Ticket.status == status)
 
+    if needs_review:
+        # Join with Prediction table where confidence < 0.60
+        query = query.join(Prediction).filter(Prediction.confidence < 0.60)
+
     if search:
         search_filter = f"%{search}%"
-        # Search by customer name, email, subject, message, or id
         query = query.filter(
             or_(
                 Ticket.customer_name.ilike(search_filter),
@@ -56,7 +61,7 @@ def list_tickets(
             )
         )
 
-    tickets = query.order_by(desc(Ticket.created_at)).offset(offset).limit(limit).all()
+    tickets = query.distinct().order_by(desc(Ticket.created_at)).offset(offset).limit(limit).all()
     return tickets
 
 @router.post("", response_model=TicketDetail)
@@ -150,6 +155,51 @@ def get_ticket_detail(ticket_id: str, db: Session) -> TicketDetail:
         for k in retrieved
     ]
 
+    # Run duplicate detection against other workspace tickets
+    other_tickets = (
+        db.query(Ticket)
+        .filter(Ticket.workspace_id == ticket.workspace_id, Ticket.id != ticket.id)
+        .order_by(desc(Ticket.created_at))
+        .limit(150)
+        .all()
+    )
+    candidates = [
+        {
+            "id": ot.id,
+            "subject": ot.subject,
+            "message": ot.message,
+            "customer_name": ot.customer_name,
+            "status": ot.status,
+            "created_at": ot.created_at
+        }
+        for ot in other_tickets
+    ]
+    dup_result = detect_duplicate(full_text, ticket.id, candidates, threshold=0.82)
+
+    # Evaluate response quality if draft exists
+    quality_check = None
+    if response_draft and response_draft.get("draft_text"):
+        quality_check = check_response_quality(
+            draft=response_draft.get("edited_text") or response_draft.get("draft_text"),
+            intent=ticket.intent,
+            retrieved_knowledge=retrieved
+        )
+
+    # Fetch logged feedbacks
+    feedbacks_db = db.query(FeedbackRecord).filter(FeedbackRecord.ticket_id == ticket.id).all()
+    feedbacks = [
+        {
+            "id": f.id,
+            "original_category": f.original_category,
+            "corrected_category": f.corrected_category,
+            "original_intent": f.original_intent,
+            "corrected_intent": f.corrected_intent,
+            "notes": f.notes,
+            "created_at": str(f.created_at)
+        }
+        for f in feedbacks_db
+    ]
+
     return TicketDetail(
         id=ticket.id,
         workspace_id=ticket.workspace_id,
@@ -177,7 +227,10 @@ def get_ticket_detail(ticket_id: str, db: Session) -> TicketDetail:
         response_draft=response_draft,
         relevant_knowledge=knowledge_results,
         preprocessed_tokens=ticket.preprocessed_tokens or [],
-        lemmatized_text=ticket.lemmatized_text
+        lemmatized_text=ticket.lemmatized_text,
+        duplicate_warning=dup_result,
+        quality_check=quality_check,
+        feedbacks=feedbacks
     )
 
 @router.put("/{id}")
@@ -201,56 +254,50 @@ def update_ticket(id: str, update_in: TicketUpdate, db: Session = Depends(get_db
     db.refresh(ticket)
     return {"status": "success", "ticket_id": ticket.id}
 
-@router.post("/{id}/analyze")
-def analyze_ticket(id: str, db: Session = Depends(get_db)):
+@router.post("/{id}/feedback")
+def submit_ticket_feedback(
+    id: str,
+    feedback_in: FeedbackCreate,
+    db: Session = Depends(get_db)
+):
+    """
+    Records human-in-the-loop agent feedback for category or intent corrections.
+    Updates the ticket attributes accordingly.
+    """
     ticket = db.query(Ticket).filter(Ticket.id == id).first()
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
-    result = process_ticket_nlp(db, ticket)
-    return result
 
-@router.get("/{id}/analysis")
-def get_ticket_analysis(id: str, db: Session = Depends(get_db)):
-    ticket = db.query(Ticket).filter(Ticket.id == id).first()
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket not found")
-    full_text = f"{ticket.subject}. {ticket.message}"
-    result = process_ticket_nlp(db, ticket, save_to_db=False)
-    return result
+    record = FeedbackRecord(
+        ticket_id=ticket.id,
+        original_category=ticket.category,
+        corrected_category=feedback_in.corrected_category or ticket.category,
+        original_intent=ticket.intent,
+        corrected_intent=feedback_in.corrected_intent or ticket.intent,
+        notes=feedback_in.notes
+    )
+    db.add(record)
 
-@router.get("/{id}/similar")
-def get_ticket_similar(id: str, db: Session = Depends(get_db)):
-    ticket = db.query(Ticket).filter(Ticket.id == id).first()
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket not found")
-    sims = db.query(SimilarComplaint).filter(SimilarComplaint.ticket_id == ticket.id).all()
-    res = []
-    for s in sims:
-        st = db.query(Ticket).filter(Ticket.id == s.similar_ticket_id).first()
-        if st:
-            res.append({
-                "ticket_id": st.id,
-                "similarity_score": s.similarity_score,
-                "subject": st.subject,
-                "category": st.category,
-                "status": st.status,
-                "created_at": str(st.created_at),
-                "snippet": (st.message or "")[:140]
-            })
-    return res
+    # Apply corrections to ticket
+    if feedback_in.corrected_category:
+        ticket.category = feedback_in.corrected_category
+    if feedback_in.corrected_intent:
+        ticket.intent = feedback_in.corrected_intent
 
-@router.get("/{id}/entities")
-def get_ticket_entities(id: str, db: Session = Depends(get_db)):
-    ticket = db.query(Ticket).filter(Ticket.id == id).first()
-    if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket not found")
-    ents = db.query(Entity).filter(Entity.ticket_id == ticket.id).all()
-    return ents
+    db.commit()
+    return {
+        "status": "success",
+        "message": "Feedback recorded successfully",
+        "ticket_id": ticket.id,
+        "new_category": ticket.category,
+        "new_intent": ticket.intent
+    }
 
 @router.post("/{id}/generate-response")
 def generate_response_endpoint(
     id: str,
     action_override: Optional[str] = Body(None, embed=True),
+    tone: Optional[str] = Body("Professional", embed=True),
     db: Session = Depends(get_db)
 ):
     ticket = db.query(Ticket).filter(Ticket.id == id).first()
@@ -274,6 +321,13 @@ def generate_response_endpoint(
         emotional_tone=ticket.emotional_tone or "Neutral",
         urgency_level=ticket.urgency_level or "Medium",
         recommended_action=action_override or ticket.recommended_action or "Review complaint",
+        retrieved_knowledge=retrieved,
+        tone=tone or "Professional"
+    )
+
+    quality = check_response_quality(
+        draft=draft,
+        intent=ticket.intent,
         retrieved_knowledge=retrieved
     )
 
@@ -291,7 +345,11 @@ def generate_response_endpoint(
         resp.recommended_action = action_override or ticket.recommended_action
     
     db.commit()
-    return {"draft_text": draft}
+    return {
+        "draft_text": draft,
+        "tone": tone,
+        "quality_check": quality
+    }
 
 @router.post("/{id}/approve-response")
 def approve_response(

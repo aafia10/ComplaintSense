@@ -42,3 +42,4 @@ class Ticket(Base):
     entities = relationship("Entity", back_populates="ticket", cascade="all, delete-orphan")
     similar_from = relationship("SimilarComplaint", foreign_keys="SimilarComplaint.ticket_id", back_populates="ticket", cascade="all, delete-orphan")
     response_draft = relationship("TicketResponse", back_populates="ticket", uselist=False, cascade="all, delete-orphan")
+    feedbacks = relationship("FeedbackRecord", back_populates="ticket", cascade="all, delete-orphan")

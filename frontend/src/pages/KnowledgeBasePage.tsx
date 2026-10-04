@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  BookOpen, 
-  Search, 
-  Plus, 
-  FileText, 
-  Trash2, 
-  Upload, 
-  Check, 
-  X,
-  ExternalLink,
-  Sparkles
+import {
+  BookOpen,
+  Search,
+  Plus,
+  FileText,
+  Trash2,
+  AlertTriangle,
+  Sparkles,
+  ShieldAlert,
+  ArrowRight,
+  CheckCircle2,
+  X
 } from 'lucide-react';
-import { fetchApi, Workspace } from '../api/client';
+import { fetchApi, Workspace, KnowledgeGapItem } from '../api/client';
 
 interface KnowledgeBasePageProps {
   activeWorkspace: Workspace;
@@ -21,8 +22,8 @@ export const KnowledgeBasePage: React.FC<KnowledgeBasePageProps> = ({
   activeWorkspace,
 }) => {
   const [docs, setDocs] = useState<any[]>([]);
+  const [gaps, setGaps] = useState<KnowledgeGapItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[] | null>(null);
   const [selectedDoc, setSelectedDoc] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -30,42 +31,29 @@ export const KnowledgeBasePage: React.FC<KnowledgeBasePageProps> = ({
   // New Document Modal State
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
-  const [newCategory, setNewCategory] = useState('Policy');
+  const [newCategory, setNewCategory] = useState('Standard Operating Procedure');
   const [newContent, setNewContent] = useState('');
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    loadDocuments();
+    loadKnowledgeData();
   }, [activeWorkspace.id]);
 
-  const loadDocuments = async () => {
+  const loadKnowledgeData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetchApi<any[]>(`/knowledge?workspace_id=${activeWorkspace.id}`);
-      setDocs(res);
-      if (res.length > 0 && !selectedDoc) {
-        setSelectedDoc(res[0]);
+      const [docsRes, gapsRes] = await Promise.all([
+        fetchApi<any[]>(`/knowledge?workspace_id=${activeWorkspace.id}`),
+        fetchApi<any>(`/knowledge/gaps?workspace_id=${activeWorkspace.id}`),
+      ]);
+      setDocs(docsRes);
+      setGaps(gapsRes.gaps || []);
+      if (docsRes.length > 0 && !selectedDoc) {
+        setSelectedDoc(docsRes[0]);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to load knowledge documents');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) {
-      setSearchResults(null);
-      return;
-    }
-    try {
-      setLoading(true);
-      const res = await fetchApi<any[]>(`/knowledge/search?workspace_id=${activeWorkspace.id}&q=${encodeURIComponent(searchQuery)}`);
-      setSearchResults(res);
-    } catch (err: any) {
-      alert(err.message || 'Search failed');
     } finally {
       setLoading(false);
     }
@@ -83,8 +71,7 @@ export const KnowledgeBasePage: React.FC<KnowledgeBasePageProps> = ({
       formData.append('category', newCategory);
       formData.append('content_text', newContent.trim());
 
-      const url = `http://localhost:8000/api/knowledge`;
-      const res = await fetch(url, {
+      const res = await fetch(`http://localhost:8000/api/knowledge`, {
         method: 'POST',
         body: formData,
       });
@@ -93,7 +80,7 @@ export const KnowledgeBasePage: React.FC<KnowledgeBasePageProps> = ({
       setIsAddOpen(false);
       setNewTitle('');
       setNewContent('');
-      await loadDocuments();
+      await loadKnowledgeData();
     } catch (err: any) {
       alert(err.message || 'Failed to save document');
     } finally {
@@ -102,98 +89,163 @@ export const KnowledgeBasePage: React.FC<KnowledgeBasePageProps> = ({
   };
 
   const handleDeleteDocument = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this custom document?')) return;
+    if (!confirm('Are you sure you want to delete this custom policy?')) return;
     try {
       await fetchApi(`/knowledge/${id}`, { method: 'DELETE' });
-      await loadDocuments();
+      await loadKnowledgeData();
     } catch (err: any) {
       alert(err.message || 'Failed to delete document');
     }
   };
 
+  const handleDraftFromGap = (gap: KnowledgeGapItem) => {
+    setNewTitle(gap.suggested_policy_title);
+    setNewCategory('Standard Operating Procedure');
+    setNewContent(
+      `# ${gap.suggested_policy_title}\n\n` +
+      `Category: ${gap.dominant_category}\n` +
+      `SLA Resolution Target: 24 Hours\n\n` +
+      `1. Operational Policy:\n- State formal handling protocols for ${gap.cluster_title}.\n\n` +
+      `2. Eligibility & Thresholds:\n- Outline compensation, returns, and escalation parameters.\n\n` +
+      `3. Customer Communication Directive:\n- Acknowledge issue with empathy and provide verified tracking updates.`
+    );
+    setIsAddOpen(true);
+  };
+
+  const filteredDocs = searchQuery.trim()
+    ? docs.filter((d) =>
+        d.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        d.content.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : docs;
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 animate-in fade-in duration-200">
-      
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="p-2 rounded-xl bg-indigo-600 text-white shadow-md shadow-indigo-100">
-              <BookOpen className="w-5 h-5" />
-            </div>
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              {activeWorkspace.name} Local Knowledge Base
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
+              Knowledge Base & SOP Policies
             </h1>
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/50">
+              100% Local Text Retrieval
+            </span>
           </div>
-          <p className="text-xs text-slate-500">
-            Local TXT policy documents referenced by the retrieval engine to ground automated response suggestions.
+          <p className="text-xs text-slate-500 mt-0.5">
+            Internal guidelines and standard operating procedures used by the response assistant to ground customer drafts.
           </p>
         </div>
 
         <button
-          onClick={() => setIsAddOpen(true)}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition"
+          onClick={() => {
+            setNewTitle('');
+            setNewContent('');
+            setIsAddOpen(true);
+          }}
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
         >
           <Plus className="w-4 h-4" />
-          <span>Add Policy TXT</span>
+          <span>Add Policy SOP</span>
         </button>
       </div>
 
-      {/* Search Bar */}
-      <form onSubmit={handleSearch} className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Search policy guidelines using local TF-IDF semantic vector search..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-          />
+      {/* KNOWLEDGE GAP DETECTION BANNER / SECTION */}
+      {gaps.length > 0 && (
+        <div className="bg-amber-50/60 border border-amber-300/80 rounded-xl p-5 shadow-2xs space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-amber-500 text-white flex items-center justify-center">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
+              <div>
+                <h2 className="text-xs font-bold uppercase tracking-wider text-amber-900">
+                  Knowledge Gap Detection ({gaps.length} Found)
+                </h2>
+                <p className="text-[11px] text-slate-600">
+                  Customer complaint clusters that lack corresponding internal policy guidelines
+                </p>
+              </div>
+            </div>
+            <span className="text-[10px] font-semibold text-amber-900 bg-amber-200/60 px-2 py-0.5 rounded">
+              High Priority SOP Recommendations
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+            {gaps.map((gap) => (
+              <div
+                key={gap.cluster_id}
+                className="bg-white p-4 rounded-lg border border-amber-200 shadow-2xs space-y-2 flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-bold text-slate-900 text-xs">{gap.cluster_title}</span>
+                    <span className="text-[10px] font-bold uppercase px-1.5 py-0.2 rounded bg-rose-100 text-rose-800">
+                      {gap.complaint_count} complaints
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 line-clamp-2">{gap.actionable_guidance}</p>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Closest existing policy: <span className="font-medium text-slate-700">{gap.closest_policy}</span>{' '}
+                    (Match: {Math.round(gap.max_kb_similarity * 100)}%)
+                  </p>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-[11px] font-medium text-emerald-800">
+                    Suggested SOP: {gap.suggested_policy_title}
+                  </span>
+                  <button
+                    onClick={() => handleDraftFromGap(gap)}
+                    className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-900 cursor-pointer"
+                  >
+                    <span>Draft Policy</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-        <button
-          type="submit"
-          className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition"
-        >
-          Search Knowledge
-        </button>
-        {searchResults && (
-          <button
-            type="button"
-            onClick={() => {
-              setSearchResults(null);
-              setSearchQuery('');
-            }}
-            className="px-3 py-2 text-xs font-semibold text-rose-600 hover:underline"
-          >
-            Clear
-          </button>
-        )}
-      </form>
+      )}
+
+      {/* Search Input */}
+      <div className="relative">
+        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+        <input
+          type="text"
+          placeholder="Search policy documentation using TF-IDF cosine semantic similarity..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-600"
+        />
+      </div>
 
       {/* 2-Column Document Browser */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        
         {/* Document List (4 cols) */}
-        <div className="lg:col-span-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
-          <div className="text-xs font-bold uppercase text-slate-400 px-2 py-1 flex items-center justify-between">
-            <span>Documents ({docs.length})</span>
-            <span className="text-[10px] text-emerald-600 font-semibold">Local Storage</span>
+        <div className="lg:col-span-4 bg-white p-4 rounded-xl border border-slate-200/90 shadow-2xs space-y-2">
+          <div className="text-[11px] font-bold uppercase text-slate-400 px-2 py-1 flex items-center justify-between">
+            <span>Documents ({filteredDocs.length})</span>
+            <span className="text-[10px] text-emerald-700 font-semibold">Local TXT</span>
           </div>
 
-          <div className="space-y-1 max-h-[550px] overflow-y-auto">
-            {docs.map((doc) => {
+          <div className="space-y-1 max-h-[500px] overflow-y-auto">
+            {filteredDocs.map((doc) => {
               const isSelected = selectedDoc?.filename === doc.filename;
               return (
                 <div
                   key={doc.filename}
                   onClick={() => setSelectedDoc(doc)}
-                  className={`p-3 rounded-xl cursor-pointer transition text-xs flex items-center justify-between ${
-                    isSelected ? 'bg-indigo-50 border border-indigo-200 text-indigo-900 font-bold' : 'hover:bg-slate-50 text-slate-700'
+                  className={`p-3 rounded-lg cursor-pointer transition text-xs flex items-center justify-between ${
+                    isSelected
+                      ? 'bg-emerald-50 border border-emerald-200/70 text-emerald-900 font-bold'
+                      : 'hover:bg-slate-50 text-slate-700'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5 truncate pr-2">
-                    <FileText className={`w-4 h-4 flex-shrink-0 ${isSelected ? 'text-indigo-600' : 'text-slate-400'}`} />
+                  <div className="flex items-center gap-2 truncate pr-2">
+                    <FileText className={`w-4 h-4 shrink-0 ${isSelected ? 'text-emerald-700' : 'text-slate-400'}`} />
                     <span className="truncate">{doc.title}</span>
                   </div>
                   {doc.is_custom && (
@@ -202,8 +254,8 @@ export const KnowledgeBasePage: React.FC<KnowledgeBasePageProps> = ({
                         e.stopPropagation();
                         handleDeleteDocument(doc.id);
                       }}
-                      className="text-slate-400 hover:text-rose-600 p-1"
-                      title="Delete document"
+                      className="text-slate-400 hover:text-rose-600 p-1 cursor-pointer"
+                      title="Delete custom policy"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -215,20 +267,20 @@ export const KnowledgeBasePage: React.FC<KnowledgeBasePageProps> = ({
         </div>
 
         {/* Document Viewer (8 cols) */}
-        <div className="lg:col-span-8 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+        <div className="lg:col-span-8 bg-white p-6 rounded-xl border border-slate-200/90 shadow-2xs space-y-4">
           {selectedDoc ? (
             <div>
               <div className="flex items-center justify-between pb-3 border-b border-slate-200">
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">{selectedDoc.title}</h2>
+                  <h2 className="text-base font-bold text-slate-900">{selectedDoc.title}</h2>
                   <span className="text-xs text-slate-400 font-mono">{selectedDoc.filename}</span>
                 </div>
-                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
                   {selectedDoc.category || 'Policy Document'}
                 </span>
               </div>
 
-              <div className="mt-4 p-4 rounded-xl bg-slate-50 border border-slate-200 font-mono text-xs text-slate-800 leading-relaxed whitespace-pre-wrap max-h-[480px] overflow-y-auto">
+              <div className="mt-4 p-4 rounded-lg bg-slate-50 border border-slate-200 font-mono text-xs text-slate-800 leading-relaxed whitespace-pre-wrap max-h-[460px] overflow-y-auto">
                 {selectedDoc.content}
               </div>
             </div>
@@ -238,59 +290,51 @@ export const KnowledgeBasePage: React.FC<KnowledgeBasePageProps> = ({
             </div>
           )}
         </div>
-
       </div>
 
       {/* Add Document Modal */}
       {isAddOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-slate-900">Add Policy Document</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-2xs p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-xl space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900">Add Standard Operating Procedure (SOP)</h3>
               <button onClick={() => setIsAddOpen(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateDocument} className="space-y-3">
+            <form onSubmit={handleCreateDocument} className="space-y-3 text-xs">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Document Title
-                </label>
+                <label className="block text-slate-700 font-semibold mb-1">Document Title</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Warranty Replacement Terms"
+                  placeholder="e.g. Standard Operating Procedure: Delayed Shipments"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Category
-                </label>
+                <label className="block text-slate-700 font-semibold mb-1">Category</label>
                 <input
                   type="text"
-                  placeholder="e.g. Warranty"
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-indigo-500"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Policy Content (TXT)
-                </label>
+                <label className="block text-slate-700 font-semibold mb-1">Policy Content (TXT format)</label>
                 <textarea
                   required
-                  rows={6}
-                  placeholder="Paste policy clauses and terms here..."
+                  rows={8}
+                  placeholder="Specify handling guidelines, compensation rules, and response turnaround..."
                   value={newContent}
                   onChange={(e) => setNewContent(e.target.value)}
-                  className="w-full p-3 text-xs rounded-lg border border-slate-200 focus:outline-none focus:border-indigo-500 font-mono"
+                  className="w-full p-3 border border-slate-200 rounded-lg text-xs font-mono"
                 />
               </div>
 
@@ -298,23 +342,22 @@ export const KnowledgeBasePage: React.FC<KnowledgeBasePageProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsAddOpen(false)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600"
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={uploading}
-                  className="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold"
+                  className="px-4 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold shadow-xs"
                 >
-                  Save Policy
+                  {uploading ? 'Saving...' : 'Save Policy'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
-
     </div>
   );
 };

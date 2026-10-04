@@ -142,21 +142,126 @@ def get_intelligence_trends(workspace_id: str = Query(...), db: Session = Depend
         emerging_issues=emerging
     )
 
-@router.get("/intelligence/recurring")
-def get_recurring_issues_endpoint(workspace_id: str = Query(...), db: Session = Depends(get_db)):
-    tickets = db.query(Ticket).filter(Ticket.workspace_id == workspace_id).all()
-    ticket_dicts = [
-        {"id": t.id, "category": t.category, "intent": t.intent, "created_at": t.created_at, "message": t.message, "subject": t.subject}
-        for t in tickets
-    ]
-    return analyze_recurring_issues(ticket_dicts)
+from app.intelligence.products import get_product_intelligence
+from app.intelligence.customers import get_customer_intelligence
+from app.repositories.ticket_repository import TicketRepository
 
-@router.get("/intelligence/emerging")
-def get_emerging_issues_endpoint(workspace_id: str = Query(...), db: Session = Depends(get_db)):
+@router.get("/intelligence/products")
+def get_products_endpoint(workspace_id: str = Query(...), db: Session = Depends(get_db)):
+    return get_product_intelligence(db, workspace_id)
+
+@router.get("/intelligence/customers")
+def get_customers_endpoint(workspace_id: str = Query(...), db: Session = Depends(get_db)):
+    return get_customer_intelligence(db, workspace_id)
+
+@router.get("/intelligence/overview")
+def get_overview_endpoint(
+    workspace_id: str = Query(...),
+    days: int = Query(30),
+    db: Session = Depends(get_db)
+):
+    repo = TicketRepository(db)
+    kpis = repo.get_kpis(workspace_id, days=days)
+    needs_attention = repo.get_needs_attention(workspace_id, limit=5)
+    
+    # Needs attention serialized
+    serialized_attention = [
+        {
+            "id": t.id,
+            "customer_name": t.customer_name,
+            "subject": t.subject,
+            "category": t.category,
+            "intent": t.intent,
+            "urgency_level": t.urgency_level,
+            "urgency_score": t.urgency_score,
+            "status": t.status,
+            "created_at": str(t.created_at)
+        }
+        for t in needs_attention
+    ]
+
+    # Get tickets for charts
     tickets = db.query(Ticket).filter(Ticket.workspace_id == workspace_id).all()
     ticket_dicts = [
-        {"id": t.id, "category": t.category, "intent": t.intent, "created_at": t.created_at, "message": t.message, "subject": t.subject}
+        {
+            "id": t.id,
+            "category": t.category,
+            "intent": t.intent,
+            "sentiment": t.sentiment,
+            "urgency_level": t.urgency_level,
+            "status": t.status,
+            "created_at": t.created_at,
+            "message": t.message,
+            "subject": t.subject
+        }
         for t in tickets
     ]
-    all_issues = analyze_recurring_issues(ticket_dicts)
-    return [i for i in all_issues if i.get("is_emerging")]
+    volume_trends = calculate_time_series_trends(ticket_dicts)
+    recurring_all = analyze_recurring_issues(ticket_dicts)
+    emerging = [r for r in recurring_all if r.get("is_emerging")]
+    emerging_card = emerging[0] if emerging else (recurring_all[0] if recurring_all else None)
+
+    # Top drivers (percentage of total)
+    total_count = len(tickets)
+    cat_counts = Counter([t.category for t in tickets if t.category])
+    top_drivers = [
+        {
+            "category": cat,
+            "count": count,
+            "percentage": round((count / total_count * 100), 1) if total_count else 0
+        }
+        for cat, count in cat_counts.most_common(5)
+    ]
+
+    sent_counts = Counter([t.sentiment for t in tickets if t.sentiment])
+    sentiment_breakdown = [
+        {
+            "sentiment": s.capitalize(),
+            "count": cnt,
+            "percentage": round((cnt / total_count * 100), 1) if total_count else 0
+        }
+        for s, cnt in sent_counts.items()
+    ]
+
+    return {
+        "kpis": kpis,
+        "volume_trends": volume_trends,
+        "top_drivers": top_drivers,
+        "sentiment_breakdown": sentiment_breakdown,
+        "needs_attention": serialized_attention,
+        "emerging_issue": emerging_card
+    }
+
+@router.get("/intelligence/clusters/{cluster_name}/complaints")
+def get_cluster_complaints(
+    cluster_name: str,
+    workspace_id: str = Query(...),
+    db: Session = Depends(get_db)
+):
+    """
+    Returns complaints matching a recurring issue cluster name or associated keywords.
+    """
+    tickets = db.query(Ticket).filter(Ticket.workspace_id == workspace_id).all()
+    c_lower = cluster_name.lower()
+    
+    # Split cluster name into searchable terms
+    terms = [w for w in c_lower.replace("&", " ").replace("-", " ").split() if len(w) > 3]
+    
+    matched = []
+    for t in tickets:
+        txt = f"{t.subject} {t.message} {t.category or ''} {t.intent or ''}".lower()
+        if any(term in txt for term in terms):
+            matched.append({
+                "id": t.id,
+                "customer_name": t.customer_name,
+                "subject": t.subject,
+                "category": t.category,
+                "intent": t.intent,
+                "sentiment": t.sentiment,
+                "urgency_level": t.urgency_level,
+                "urgency_score": t.urgency_score,
+                "status": t.status,
+                "created_at": str(t.created_at)
+            })
+
+    return {"cluster_name": cluster_name, "count": len(matched), "complaints": matched[:25]}

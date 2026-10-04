@@ -107,3 +107,47 @@ def retrieve_relevant_knowledge(
             }
             for i, d in enumerate(doc_pool[:top_k])
         ]
+
+def retrieve_relevant_policies(
+    query_text: str,
+    documents: List[Any],
+    top_k: int = 3
+) -> List[Dict[str, Any]]:
+    """
+    Retriever for knowledge documents passed as KnowledgeDocument models or dicts.
+    Returns list of dicts with similarity_score, document_title, etc.
+    """
+    if not query_text or not documents:
+        return []
+
+    doc_dicts = []
+    for d in documents:
+        if isinstance(d, dict):
+            doc_dicts.append(d)
+        else:
+            doc_dicts.append({
+                "id": getattr(d, "id", 0),
+                "title": getattr(d, "title", "Policy"),
+                "filename": getattr(d, "filename", "policy.txt"),
+                "content": getattr(d, "content", ""),
+                "category": getattr(d, "category", "Policy")
+            })
+
+    doc_texts = [d["title"] + " " + d["content"] for d in doc_dicts]
+    try:
+        vec = TfidfVectorizer(ngram_range=(1, 2), stop_words="english", sublinear_tf=True)
+        doc_matrix = vec.fit_transform(doc_texts)
+        query_vec = vec.transform([query_text])
+        sims = cosine_similarity(query_vec, doc_matrix)[0]
+
+        scored = []
+        for idx, score in enumerate(sims):
+            scored.append({
+                "similarity_score": float(score),
+                "document_title": doc_dicts[idx]["title"],
+                "filename": doc_dicts[idx]["filename"]
+            })
+        scored.sort(key=lambda x: x["similarity_score"], reverse=True)
+        return scored[:top_k]
+    except Exception:
+        return []
