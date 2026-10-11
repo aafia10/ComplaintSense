@@ -34,10 +34,15 @@ def analyze_recurring_issues(tickets: List[Dict[str, Any]]) -> List[Dict[str, An
         cluster_name = theme.replace(" - Report Problem", "").replace(" - General", "")
 
         is_emerging = pct_change > 15.0 and len(group_tickets) >= 5
+        urg_scores = [t.get("urgency_score") for t in group_tickets if t.get("urgency_score") is not None]
+        avg_urg = round(sum(urg_scores) / len(urg_scores), 1) if urg_scores else 50.0
 
         recurring_issues.append({
             "cluster_name": cluster_name,
+            "category": cat,
             "complaint_count": len(group_tickets),
+            "count": len(group_tickets),
+            "avg_urgency": avg_urg,
             "trend_pct": pct_change,
             "common_terms": root_cause_info["common_terms"],
             "possible_root_cause": root_cause_info["associated_factor"],

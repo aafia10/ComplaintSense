@@ -33,7 +33,7 @@ def get_product_intelligence(db: Session, workspace_id: str) -> List[Dict[str, A
     })
 
     for ent in product_entities:
-        clean_name = ent.entity_value.strip().title()
+        clean_name = (ent.entity_text or "").strip().title()
         if len(clean_name) < 3:
             continue
         p = product_data[clean_name]

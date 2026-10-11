@@ -75,7 +75,7 @@ def get_customer_intelligence(db: Session, workspace_id: str) -> List[Dict[str, 
             "risk_level": risk_level,
             "latest_ticket_id": most_recent.id,
             "latest_subject": most_recent.subject,
-            "last_complaint_date": str(most_recent.created_at.date()) if most_recent.created_at else ""
+            "last_complaint_date": str(most_recent.created_at)[:10] if most_recent.created_at else ""
         })
 
     # Sort so customers with highest complaint count and urgency appear first

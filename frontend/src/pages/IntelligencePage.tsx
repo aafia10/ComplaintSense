@@ -61,10 +61,13 @@ export const IntelligencePage: React.FC<IntelligencePageProps> = ({
   const [clusterLoading, setClusterLoading] = useState(false);
 
   useEffect(() => {
-    loadAllIntelligence();
-  }, [activeWorkspace.id]);
+    if (activeWorkspace?.id) {
+      loadAllIntelligence();
+    }
+  }, [activeWorkspace?.id]);
 
   const loadAllIntelligence = async () => {
+    if (!activeWorkspace?.id) return;
     try {
       setLoading(true);
       setError(null);
@@ -74,8 +77,8 @@ export const IntelligencePage: React.FC<IntelligencePageProps> = ({
         fetchApi<CustomerIntelligenceItem[]>(`/intelligence/customers?workspace_id=${activeWorkspace.id}`),
       ]);
       setTrendsData(tRes);
-      setProductsData(pRes);
-      setCustomersData(cRes);
+      setProductsData(pRes || []);
+      setCustomersData(cRes || []);
     } catch (err: any) {
       setError(err.message || 'Failed to load intelligence data');
     } finally {
@@ -87,10 +90,10 @@ export const IntelligencePage: React.FC<IntelligencePageProps> = ({
     setSelectedCluster(clusterName);
     try {
       setClusterLoading(true);
-      const complaints = await fetchApi<any[]>(
+      const res = await fetchApi<any>(
         `/intelligence/clusters/${encodeURIComponent(clusterName)}/complaints?workspace_id=${activeWorkspace.id}`
       );
-      setClusterComplaints(complaints);
+      setClusterComplaints(Array.isArray(res) ? res : (res?.complaints || []));
     } catch (err) {
       console.error(err);
       setClusterComplaints([]);
@@ -279,7 +282,7 @@ export const IntelligencePage: React.FC<IntelligencePageProps> = ({
               {trendsData.recurring_issues?.map((issue: any) => (
                 <div key={issue.cluster_name} className="p-4 bg-slate-50 dark:bg-[#13263A] rounded-xl border border-slate-200 dark:border-[#23364D] space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-sm text-slate-900 dark:text-white">{issue.category}</span>
+                    <span className="font-bold text-sm text-slate-900 dark:text-white">{issue.category || issue.cluster_name}</span>
                     <span className={`text-xs font-bold flex items-center gap-1 ${issue.trend_pct > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-700 dark:text-blue-400'}`}>
                       {issue.trend_pct > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : null}
                       {issue.trend_pct > 0 ? `+${issue.trend_pct}%` : `${issue.trend_pct}%`}
@@ -287,8 +290,8 @@ export const IntelligencePage: React.FC<IntelligencePageProps> = ({
                   </div>
                   <p className="text-xs text-slate-600 dark:text-slate-300">{issue.cluster_name}</p>
                   <div className="text-xs text-slate-400 pt-1 border-t border-slate-200 dark:border-[#23364D] flex justify-between">
-                    <span>Complaints: {issue.count}</span>
-                    <span>Avg Urgency: {issue.avg_urgency}/100</span>
+                    <span>Complaints: {issue.complaint_count || issue.count || 0}</span>
+                    <span>Avg Urgency: {issue.avg_urgency || 50}/100</span>
                   </div>
                 </div>
               ))}
@@ -313,7 +316,7 @@ export const IntelligencePage: React.FC<IntelligencePageProps> = ({
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold text-blue-900 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">
-                      {issue.category}
+                      {issue.category || 'General'}
                     </span>
                     {issue.is_emerging && (
                       <span className="text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1">
@@ -328,7 +331,7 @@ export const IntelligencePage: React.FC<IntelligencePageProps> = ({
                 </div>
 
                 <div className="pt-3 border-t border-slate-100 dark:border-[#23364D] flex items-center justify-between text-xs">
-                  <span className="font-semibold text-slate-500 dark:text-slate-400">{issue.count} complaints</span>
+                  <span className="font-semibold text-slate-500 dark:text-slate-400">{issue.complaint_count || issue.count || 0} complaints</span>
                   <span className="font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1">
                     Drill down <ChevronRight className="w-4 h-4" />
                   </span>
@@ -427,7 +430,7 @@ export const IntelligencePage: React.FC<IntelligencePageProps> = ({
       {activeTab === 'locations' && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {trendsData.top_locations?.map((loc: any) => (
+            {(trendsData.affected_locations || trendsData.top_locations || []).map((loc: any) => (
               <div key={loc.location} className="bg-white dark:bg-[#0D1B2A] p-5 rounded-2xl border border-slate-200 dark:border-[#23364D] shadow-card space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -484,7 +487,7 @@ export const IntelligencePage: React.FC<IntelligencePageProps> = ({
                       <span className="text-slate-400">{c.customer_name}</span>
                     </div>
                     <p className="text-xs text-slate-700 dark:text-slate-300 font-medium line-clamp-2">
-                      {c.text}
+                      {c.subject || c.message || c.text || 'Customer grievance'}
                     </p>
                   </div>
                 ))
