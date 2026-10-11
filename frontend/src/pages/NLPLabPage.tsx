@@ -417,26 +417,26 @@ export const NLPLabPage: React.FC<NLPLabPageProps> = ({ activeWorkspace }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white dark:bg-[#0D1B2A] p-5 rounded-2xl border border-slate-200 dark:border-[#23364D] shadow-card">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Health Status</span>
-              <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1 block">
+              <span className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1 block">
                 {healthData.status}
               </span>
             </div>
             <div className="bg-white dark:bg-[#0D1B2A] p-5 rounded-2xl border border-slate-200 dark:border-[#23364D] shadow-card">
               <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Total Inferences</span>
               <span className="text-2xl font-bold text-slate-900 dark:text-white mt-1 block">
-                {healthData.total_inferences}
+                {healthData.total_predictions}
               </span>
             </div>
             <div className="bg-white dark:bg-[#0D1B2A] p-5 rounded-2xl border border-slate-200 dark:border-[#23364D] shadow-card">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Avg Latency</span>
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Avg Confidence</span>
               <span className="text-2xl font-bold text-slate-900 dark:text-white mt-1 block">
-                {healthData.avg_latency_ms} ms
+                {Math.round(healthData.average_confidence * 100)}%
               </span>
             </div>
             <div className="bg-white dark:bg-[#0D1B2A] p-5 rounded-2xl border border-slate-200 dark:border-[#23364D] shadow-card">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Active Model</span>
-              <span className="text-sm font-bold text-blue-600 dark:text-blue-400 mt-2 block truncate">
-                {healthData.active_model}
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Low-Confidence Rate</span>
+              <span className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1 block">
+                {healthData.low_confidence_rate_pct}%
               </span>
             </div>
           </div>

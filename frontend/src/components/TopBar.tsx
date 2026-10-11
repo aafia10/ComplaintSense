@@ -137,8 +137,8 @@ export const TopBar: React.FC<TopBarProps> = ({
         >
           {resetSuccess ? (
             <>
-              <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span className="text-emerald-700 dark:text-emerald-400">Reset Done</span>
+              <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span className="text-blue-700 dark:text-blue-400">Reset Done</span>
             </>
           ) : (
             <>

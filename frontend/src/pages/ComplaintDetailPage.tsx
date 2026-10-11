@@ -21,7 +21,13 @@ import {
   Sparkles,
   Flame,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  ListChecks,
+  CheckSquare,
+  Square,
+  Workflow,
+  ShieldAlert,
+  Calendar
 } from 'lucide-react';
 import { fetchApi, TicketDetail, Workspace, ResponseQualityCheck } from '../api/client';
 
@@ -31,6 +37,58 @@ interface ComplaintDetailPageProps {
   onBack: () => void;
   onSelectTicket: (ticketId: string) => void;
 }
+
+const LIFECYCLE_STAGES = [
+  { key: 'ingested', label: 'Ingested', desc: 'Sanitized & queued' },
+  { key: 'analyzed', label: 'NLP Analyzed', desc: 'Intent & entities extracted' },
+  { key: 'routed', label: 'Auto-Routed', desc: 'Department assigned' },
+  { key: 'drafted', label: 'Draft Generated', desc: 'Policy-grounded' },
+  { key: 'review', label: 'Human Review', desc: 'Agent verification' },
+  { key: 'resolved', label: 'Resolved', desc: 'Resolution delivered' },
+];
+
+const PLAYBOOKS_BY_CATEGORY: Record<string, { title: string; steps: string[] }> = {
+  'Delivery & Logistics': {
+    title: 'Logistics Incident SOP Playbook',
+    steps: [
+      'Audit carrier tracking telemetry & scan history via carrier API',
+      'Cross-reference Mumbai / hub sorting transit delay threshold',
+      'Confirm delivery address accuracy & customer contact window',
+      'Issue carrier SLA penalty claim / dispatch replacement unit',
+      'Transmit proactive ETA notification to customer with apology token',
+    ],
+  },
+  'Billing & Refund': {
+    title: 'Financial Dispute Resolution Playbook',
+    steps: [
+      'Verify transaction ID & payment gateway status webhook',
+      'Cross-check payment ledger for duplicate capture / erroneous billing',
+      'Check refund policy threshold ($100 instant reversal threshold)',
+      'Authorize refund credit or voucher issuance in billing ledger',
+      'Issue formal transaction receipt and closing notification',
+    ],
+  },
+  'Product Defect': {
+    title: 'Hardware & Product Defect SOP Playbook',
+    steps: [
+      'Inspect product batch code, warranty eligibility & purchase invoice',
+      'Cross-reference known defect registry & engineering bug tracker',
+      'Issue prepaid Return Merchandise Authorization (RMA) label',
+      'Dispatch replacement inventory from regional warehouse',
+      'Log defective batch telemetry in Quality Assurance portal',
+    ],
+  },
+  'Technical Support': {
+    title: 'Technical Triage & Service Playbook',
+    steps: [
+      'Collect diagnostic client logs, device OS & app version metadata',
+      'Query Knowledge Base for active service outages & workarounds',
+      'Reproduce issue and verify credentials / session tokens',
+      'Apply configuration patch or escalate to Tier-2 Engineering',
+      'Verify customer issue resolution with confirmation test',
+    ],
+  },
+};
 
 export const ComplaintDetailPage: React.FC<ComplaintDetailPageProps> = ({
   ticketId,
@@ -58,6 +116,9 @@ export const ComplaintDetailPage: React.FC<ComplaintDetailPageProps> = ({
   const [correctedIntent, setCorrectedIntent] = useState('');
   const [feedbackNotes, setFeedbackNotes] = useState('');
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+
+  // Interactive Playbook State
+  const [completedSteps, setCompletedSteps] = useState<Record<number, boolean>>({ 0: true });
 
   // Preprocessing tab
   const [prepTab, setPrepTab] = useState<'tokens' | 'lemmatized' | 'raw'>('lemmatized');
@@ -190,6 +251,52 @@ export const ComplaintDetailPage: React.FC<ComplaintDetailPageProps> = ({
     }
   };
 
+  const togglePlaybookStep = (index: number) => {
+    setCompletedSteps(prev => ({
+      ...prev,
+      [index]: !prev[index],
+    }));
+  };
+
+  // Helper calculations for SLA
+  const getSlaTargetHours = (urgency?: string) => {
+    switch (urgency?.toLowerCase()) {
+      case 'critical': return 4;
+      case 'high': return 12;
+      case 'medium': return 24;
+      case 'low': return 48;
+      default: return 24;
+    }
+  };
+
+  const getSlaDetails = () => {
+    const targetHours = getSlaTargetHours(ticket?.urgency_level);
+    const createdTime = ticket?.created_at ? new Date(ticket.created_at).getTime() : Date.now() - 3600000 * 3;
+    const now = Date.now();
+    const elapsedHours = Math.max(0.1, (now - createdTime) / (1000 * 60 * 60));
+    const remainingHours = targetHours - elapsedHours;
+    const isBreached = remainingHours <= 0;
+    const percent = Math.min(100, Math.round((elapsedHours / targetHours) * 100));
+
+    return {
+      targetHours,
+      elapsedHours: Math.round(elapsedHours * 10) / 10,
+      remainingHours: Math.round(Math.abs(remainingHours) * 10) / 10,
+      isBreached,
+      percent,
+    };
+  };
+
+  // Current stage in lifecycle
+  const getLifecycleStageIndex = () => {
+    if (!ticket) return 0;
+    if (ticket.status === 'resolved') return 5;
+    if (ticket.status === 'escalated') return 4;
+    if (ticket.response_draft?.is_approved) return 4;
+    if (ticket.response_draft) return 3;
+    return 2;
+  };
+
   if (loading) {
     return (
       <div className="p-16 max-w-7xl mx-auto text-center space-y-3">
@@ -216,6 +323,20 @@ export const ComplaintDetailPage: React.FC<ComplaintDetailPageProps> = ({
   }
 
   const dup = ticket.duplicate_warning;
+  const sla = getSlaDetails();
+  const currentStageIdx = getLifecycleStageIndex();
+  const playbook = PLAYBOOKS_BY_CATEGORY[ticket.category || ''] || {
+    title: 'Standard Grievance Resolution Playbook',
+    steps: [
+      'Validate customer identity and historical ticket context',
+      'Perform NLP intent and emotional escalation verification',
+      'Confirm grounded policy coverage with Knowledge Base',
+      'Review and refine AI-suggested response draft',
+      'Transmit formal response and mark resolution status',
+    ],
+  };
+  const totalPlaybookSteps = playbook.steps.length;
+  const completedPlaybookCount = playbook.steps.filter((_, idx) => !!completedSteps[idx]).length;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
@@ -238,7 +359,7 @@ export const ComplaintDetailPage: React.FC<ComplaintDetailPageProps> = ({
               <span
                 className={`text-xs font-bold px-2.5 py-1 rounded-full uppercase ${
                   ticket.status === 'resolved'
-                    ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                    ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
                     : ticket.status === 'escalated'
                     ? 'bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
                     : 'bg-slate-100 dark:bg-[#13263A] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#23364D]'
@@ -323,6 +444,127 @@ export const ComplaintDetailPage: React.FC<ComplaintDetailPageProps> = ({
         </div>
       )}
 
+      {/* ================= COMPLAINT SLA TRACKER CARD ================= */}
+      <div className="bg-white dark:bg-[#0D1B2A] p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-[#23364D] shadow-card">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-[#23364D]">
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-xl ${sla.isBreached && ticket.status !== 'resolved' ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300' : 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300'}`}>
+              <Clock className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">SLA Resolution Tracker</h3>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                  ticket.status === 'resolved'
+                    ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                    : sla.isBreached
+                    ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                    : 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800'
+                }`}>
+                  {ticket.status === 'resolved' ? 'Resolved in SLA' : sla.isBreached ? 'SLA Breached' : 'Within SLA Target'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Target resolution window calibrated to {ticket.urgency_level?.toUpperCase() || 'HIGH'} severity
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Metrics */}
+          <div className="flex items-center gap-4 text-xs font-semibold">
+            <div className="text-right">
+              <span className="text-slate-400 block text-[11px]">SLA Target</span>
+              <span className="text-slate-900 dark:text-white font-bold text-sm">{sla.targetHours} Hours</span>
+            </div>
+            <div className="h-7 w-px bg-slate-200 dark:bg-[#23364D]" />
+            <div className="text-right">
+              <span className="text-slate-400 block text-[11px]">Elapsed Time</span>
+              <span className="text-slate-900 dark:text-white font-bold text-sm">{sla.elapsedHours}h</span>
+            </div>
+            <div className="h-7 w-px bg-slate-200 dark:bg-[#23364D]" />
+            <div className="text-right">
+              <span className="text-slate-400 block text-[11px]">{sla.isBreached ? 'Overdue By' : 'Remaining'}</span>
+              <span className={`font-bold text-sm ${sla.isBreached && ticket.status !== 'resolved' ? 'text-rose-600 dark:text-rose-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                {ticket.status === 'resolved' ? 'Closed' : `${sla.remainingHours}h`}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Visual Progress Bar */}
+        <div className="pt-4 space-y-1.5">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+            <span>SLA Progression: {sla.percent}% of {sla.targetHours}h allocation</span>
+            <span>{ticket.status === 'resolved' ? '100% completed' : sla.isBreached ? 'Breached resolution threshold' : `${sla.remainingHours}h until escalation`}</span>
+          </div>
+          <div className="w-full h-2.5 rounded-full bg-slate-100 dark:bg-[#13263A] overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                ticket.status === 'resolved'
+                  ? 'bg-blue-600'
+                  : sla.isBreached
+                  ? 'bg-rose-500'
+                  : 'bg-blue-600'
+              }`}
+              style={{ width: `${ticket.status === 'resolved' ? 100 : sla.percent}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* ================= COMPLAINT LIFECYCLE TIMELINE ================= */}
+      <div className="bg-white dark:bg-[#0D1B2A] p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-[#23364D] shadow-card space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Workflow className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">Complaint Lifecycle Timeline</h3>
+          </div>
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+            Stage {currentStageIdx + 1} of {LIFECYCLE_STAGES.length}
+          </span>
+        </div>
+
+        {/* Responsive Step Line */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-2">
+          {LIFECYCLE_STAGES.map((stage, idx) => {
+            const isCompleted = idx < currentStageIdx || (idx === 5 && ticket.status === 'resolved');
+            const isCurrent = idx === currentStageIdx && ticket.status !== 'resolved';
+
+            return (
+              <div
+                key={stage.key}
+                className={`p-3 rounded-xl border transition-all ${
+                  isCurrent
+                    ? 'bg-blue-50/70 dark:bg-blue-950/40 border-blue-400 dark:border-blue-600 ring-2 ring-blue-500/20'
+                    : isCompleted
+                    ? 'bg-white dark:bg-[#13263A] border-blue-200 dark:border-blue-900/50'
+                    : 'bg-slate-50 dark:bg-[#0D1B2A] border-slate-100 dark:border-[#23364D] opacity-60'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                    isCompleted
+                      ? 'bg-blue-600 text-white'
+                      : isCurrent
+                      ? 'bg-blue-600 text-white animate-pulse'
+                      : 'bg-slate-200 dark:bg-[#23364D] text-slate-600 dark:text-slate-400'
+                  }`}>
+                    {isCompleted ? <Check className="w-3.5 h-3.5" /> : idx + 1}
+                  </span>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                    isCurrent ? 'text-blue-700 dark:text-blue-400' : isCompleted ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'
+                  }`}>
+                    {isCompleted ? 'Done' : isCurrent ? 'Active' : 'Pending'}
+                  </span>
+                </div>
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white leading-tight">{stage.label}</h4>
+                <p className="text-[11px] text-slate-400 dark:text-slate-400 mt-0.5 leading-snug">{stage.desc}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* 3-Column Dossier Layout (Desktop) vs Responsive Stack (Mobile) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ================= COLUMN 1: Customer Message & NLP Understanding ================= */}
@@ -339,13 +581,13 @@ export const ComplaintDetailPage: React.FC<ComplaintDetailPageProps> = ({
                   <p className="text-xs text-slate-400 dark:text-slate-400">{ticket.customer_email || 'No email provided'}</p>
                 </div>
               </div>
-              <span className="text-xs text-slate-400 font-mono">{ticket.channel || 'web portal'}</span>
+              <span className="text-xs text-slate-400 font-mono">{ticket.customer_email || 'web portal'}</span>
             </div>
 
             {/* Original Complaint Text */}
             <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#13263A] border border-slate-100 dark:border-[#23364D]">
               <p className="text-sm sm:text-base text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-wrap font-normal">
-                "{ticket.text}"
+                "{ticket.message}"
               </p>
             </div>
 
@@ -371,17 +613,17 @@ export const ComplaintDetailPage: React.FC<ComplaintDetailPageProps> = ({
               </div>
 
               <div className="p-3 bg-slate-50 dark:bg-[#13263A] rounded-xl text-xs font-mono text-slate-700 dark:text-slate-300 max-h-32 overflow-y-auto">
-                {prepTab === 'lemmatized' && (ticket.cleaned_text || 'Lemmatized terms processed')}
+                {prepTab === 'lemmatized' && (ticket.lemmatized_text || 'Lemmatized terms processed')}
                 {prepTab === 'tokens' && (
                   <div className="flex flex-wrap gap-1">
-                    {(ticket.tokens || ticket.cleaned_text?.split(' ') || []).map((tok: string, idx: number) => (
+                    {(ticket.preprocessed_tokens || []).map((tok: string, idx: number) => (
                       <span key={idx} className="bg-slate-200 dark:bg-[#0D1B2A] px-1.5 py-0.5 rounded text-[11px]">
                         {tok}
                       </span>
                     ))}
                   </div>
                 )}
-                {prepTab === 'raw' && ticket.text}
+                {prepTab === 'raw' && ticket.message}
               </div>
             </div>
           </div>
@@ -398,7 +640,7 @@ export const ComplaintDetailPage: React.FC<ComplaintDetailPageProps> = ({
               <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-[#23364D]">
                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">Issue Topic</span>
                 <span className="font-bold text-blue-900 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 px-3 py-1 rounded-full border border-blue-200 dark:border-blue-800 text-xs">
-                  {ticket.category} ({Math.round((ticket.confidence || 0.8) * 100)}% conf)
+                  {ticket.category}
                 </span>
               </div>
 
@@ -433,9 +675,9 @@ export const ComplaintDetailPage: React.FC<ComplaintDetailPageProps> = ({
                 </div>
                 {ticket.urgency_signals && ticket.urgency_signals.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 pt-1">
-                    {ticket.urgency_signals.map((sig: string, idx: number) => (
-                      <span key={idx} className="text-[11px] font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-800">
-                        {sig}
+                    {ticket.urgency_signals.map((sig, idx: number) => (
+                      <span key={idx} className="text-[11px] font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-800" title={sig.description}>
+                        {sig.keyword || sig.type}
                       </span>
                     ))}
                   </div>
@@ -447,10 +689,10 @@ export const ComplaintDetailPage: React.FC<ComplaintDetailPageProps> = ({
                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase block">Named Entities Extracted</span>
                 <div className="flex flex-wrap gap-1.5">
                   {ticket.entities && ticket.entities.length > 0 ? (
-                    ticket.entities.map((ent: any, idx: number) => (
+                    ticket.entities.map((ent, idx: number) => (
                       <span key={idx} className="text-xs font-semibold bg-slate-100 dark:bg-[#13263A] text-slate-700 dark:text-slate-200 px-2.5 py-1 rounded-md border border-slate-200 dark:border-[#23364D]">
-                        <span className="text-slate-400 text-[10px] mr-1">{ent.label}:</span>
-                        {ent.text}
+                        <span className="text-slate-400 text-[10px] mr-1">{ent.entity_type}:</span>
+                        {ent.entity_text}
                       </span>
                     ))
                   ) : (
@@ -462,8 +704,61 @@ export const ComplaintDetailPage: React.FC<ComplaintDetailPageProps> = ({
           </div>
         </div>
 
-        {/* ================= COLUMN 2: Similar Complaints & Intelligence ================= */}
+        {/* ================= COLUMN 2: Resolution Playbook & Similar Complaints ================= */}
         <div className="space-y-6">
+          {/* Interactive Complaint Resolution Playbook Card */}
+          <div className="bg-white dark:bg-[#0D1B2A] p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-[#23364D] shadow-card space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ListChecks className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Resolution Playbook</h3>
+              </div>
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                completedPlaybookCount === totalPlaybookSteps
+                  ? 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300'
+                  : 'bg-slate-100 dark:bg-[#13263A] text-slate-700 dark:text-slate-300'
+              }`}>
+                {completedPlaybookCount}/{totalPlaybookSteps} Completed
+              </span>
+            </div>
+
+            <div className="p-3 bg-blue-50/50 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-900/40">
+              <span className="text-xs font-bold text-blue-900 dark:text-blue-300 block">{playbook.title}</span>
+              <p className="text-[11px] text-blue-700 dark:text-blue-400 mt-0.5">
+                Standard operating procedure verified for {ticket.category || 'General Complaints'}. Check off steps as you resolve this ticket.
+              </p>
+            </div>
+
+            {/* Checklist */}
+            <div className="space-y-2 pt-1">
+              {playbook.steps.map((step, idx) => {
+                const isChecked = !!completedSteps[idx];
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => togglePlaybookStep(idx)}
+                    className={`flex items-start gap-2.5 p-2.5 rounded-xl border transition cursor-pointer ${
+                      isChecked
+                        ? 'bg-blue-50/40 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 text-slate-900 dark:text-white'
+                        : 'bg-white dark:bg-[#13263A] border-slate-200 dark:border-[#23364D] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1A3048]'
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      className="mt-0.5 text-blue-600 dark:text-blue-400 shrink-0"
+                      aria-label={isChecked ? 'Mark step incomplete' : 'Mark step complete'}
+                    >
+                      {isChecked ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4 text-slate-400" />}
+                    </button>
+                    <span className={`text-xs leading-relaxed ${isChecked ? 'line-through text-slate-400 dark:text-slate-400' : 'font-medium'}`}>
+                      {step}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Similar Complaints List */}
           <div className="bg-white dark:bg-[#0D1B2A] p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-[#23364D] shadow-card space-y-4">
             <div className="flex items-center justify-between">
@@ -475,22 +770,22 @@ export const ComplaintDetailPage: React.FC<ComplaintDetailPageProps> = ({
 
             <div className="space-y-3">
               {ticket.similar_complaints && ticket.similar_complaints.length > 0 ? (
-                ticket.similar_complaints.map((sim: any) => (
+                ticket.similar_complaints.map((sim) => (
                   <div
-                    key={sim.matched_ticket_id}
-                    onClick={() => onSelectTicket(sim.matched_ticket_id)}
+                    key={sim.ticket_id}
+                    onClick={() => onSelectTicket(sim.ticket_id)}
                     className="p-3.5 rounded-xl border border-slate-200 dark:border-[#23364D] hover:border-blue-400 dark:hover:border-blue-500 hover:bg-slate-50 dark:hover:bg-[#13263A] transition cursor-pointer space-y-1.5"
                   >
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-mono font-bold text-slate-900 dark:text-white">
-                        #{sim.matched_ticket_id}
+                        #{sim.ticket_id}
                       </span>
                       <span className="font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded">
                         {Math.round(sim.similarity_score * 100)}% match
                       </span>
                     </div>
                     <p className="text-xs text-slate-700 dark:text-slate-300 line-clamp-2 leading-relaxed">
-                      {sim.matched_text}
+                      {sim.snippet || sim.subject}
                     </p>
                   </div>
                 ))
@@ -511,7 +806,7 @@ export const ComplaintDetailPage: React.FC<ComplaintDetailPageProps> = ({
               <div className="p-3.5 bg-slate-50 dark:bg-[#13263A] rounded-xl border border-slate-100 dark:border-[#23364D] space-y-1">
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Recurring Cluster</span>
                 <span className="font-bold text-slate-900 dark:text-white text-sm block">
-                  {ticket.cluster_name || 'Delivery Delays in Mumbai Cluster'}
+                  {(ticket as any).cluster_name || 'Delivery Delays in Mumbai Cluster'}
                 </span>
                 <span className="text-xs text-rose-600 dark:text-rose-400 font-semibold block">
                   +35% growth in current 30-day window
@@ -564,14 +859,14 @@ export const ComplaintDetailPage: React.FC<ComplaintDetailPageProps> = ({
               </div>
 
               {/* Policy Grounding */}
-              {ticket.policy_reference && (
+              {ticket.relevant_knowledge && ticket.relevant_knowledge.length > 0 && (
                 <div className="p-3.5 bg-blue-50/60 dark:bg-blue-950/40 rounded-xl border border-blue-200 dark:border-blue-800 space-y-1">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-blue-900 dark:text-blue-300">
                     <FileText className="w-3.5 h-3.5" />
-                    <span>Grounded in Policy: {ticket.policy_reference}</span>
+                    <span>Grounded in Policy: {ticket.relevant_knowledge[0].title}</span>
                   </div>
                   <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
-                    Corporate policy guarantees proactive transit audit and refund eligibility for delays exceeding 48 hours.
+                    {ticket.relevant_knowledge[0].snippet || 'Corporate policy guarantees proactive transit audit and refund eligibility.'}
                   </p>
                 </div>
               )}
@@ -620,23 +915,21 @@ export const ComplaintDetailPage: React.FC<ComplaintDetailPageProps> = ({
                   <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">
                     Quality Checklist
                   </span>
-                  <span className="text-xs font-extrabold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 rounded">
-                    Score: {qualityCheck.score}/100
+                  <span className="text-xs font-extrabold text-blue-700 dark:text-blue-400 bg-blue-100 dark:bg-blue-950/60 px-2 py-0.5 rounded">
+                    Score: {qualityCheck.score_pct}%
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-1.5 text-xs">
-                  <span className={`flex items-center gap-1 ${qualityCheck.has_greeting ? 'text-emerald-700 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
-                    <CheckCircle className="w-3.5 h-3.5" /> Greeting
-                  </span>
-                  <span className={`flex items-center gap-1 ${qualityCheck.has_intent_ack ? 'text-emerald-700 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
-                    <CheckCircle className="w-3.5 h-3.5" /> Intent Ack
-                  </span>
-                  <span className={`flex items-center gap-1 ${qualityCheck.has_entities ? 'text-emerald-700 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
-                    <CheckCircle className="w-3.5 h-3.5" /> Entity Ref
-                  </span>
-                  <span className={`flex items-center gap-1 ${qualityCheck.has_next_steps ? 'text-emerald-700 dark:text-emerald-400 font-semibold' : 'text-slate-400'}`}>
-                    <CheckCircle className="w-3.5 h-3.5" /> SLA Action
-                  </span>
+                  {qualityCheck.checklist?.map((item) => (
+                    <span
+                      key={item.id}
+                      className={`flex items-center gap-1 ${item.passed ? 'text-blue-700 dark:text-blue-400 font-semibold' : 'text-slate-400'}`}
+                      title={item.detail}
+                    >
+                      <CheckCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span className="truncate">{item.label}</span>
+                    </span>
+                  ))}
                 </div>
               </div>
             )}
@@ -664,7 +957,7 @@ export const ComplaintDetailPage: React.FC<ComplaintDetailPageProps> = ({
                 onClick={handleCopyResponse}
                 className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-[#23364D] hover:bg-slate-50 dark:hover:bg-[#13263A] text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 transition cursor-pointer min-h-[44px]"
               >
-                {isCopied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-slate-500" />}
+                {isCopied ? <Check className="w-4 h-4 text-blue-600" /> : <Copy className="w-4 h-4 text-slate-500" />}
                 <span>{isCopied ? 'Copied!' : 'Copy'}</span>
               </button>
 

@@ -148,7 +148,7 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
             Low {score !== undefined ? `(${score})` : ''}
           </span>
         );
@@ -159,7 +159,7 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
     switch (status.toLowerCase()) {
       case 'resolved':
         return (
-          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
             Resolved
           </span>
         );
@@ -197,7 +197,7 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
     }
     if (s.includes('pos') || s === 'satisfied') {
       return (
-        <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200/60 dark:border-emerald-800">
+        <span className="text-xs font-semibold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded border border-blue-200/60 dark:border-blue-800">
           Positive
         </span>
       );
@@ -466,10 +466,7 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
 
                 {/* Subject & Complaint Snippet */}
                 <div>
-                  <h4 className="text-base font-bold text-slate-900 dark:text-white line-clamp-1">{t.subject}</h4>
-                  <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 line-clamp-2 leading-relaxed">
-                    {t.text}
-                  </p>
+                  <h4 className="text-base font-bold text-slate-900 dark:text-white line-clamp-2 leading-snug">{t.subject}</h4>
                 </div>
 
                 {/* Tags & Metadata */}
@@ -491,7 +488,7 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
                     <User className="w-3.5 h-3.5" />
                     <span className="font-medium truncate max-w-[140px]">{t.customer_name || 'Customer'}</span>
                   </div>
-                  <span className="font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-0.5 min-h-[44px] flex items-center">
+                  <span className="font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-0.5 min-h-[44px]">
                     View Complaint <ChevronRight className="w-4 h-4" />
                   </span>
                 </div>
@@ -530,7 +527,7 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
                       {/* Customer Name */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <span className="font-semibold text-slate-900 dark:text-white block">{ticket.customer_name}</span>
-                        <span className="text-xs text-slate-400 dark:text-slate-400">{ticket.channel || 'web'}</span>
+                        <span className="text-xs text-slate-400 dark:text-slate-400">{ticket.customer_email || 'Web Portal'}</span>
                       </td>
 
                       {/* Category Topic */}
@@ -538,11 +535,6 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
                         <span className="inline-block px-2.5 py-0.5 rounded text-xs font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-900 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800 whitespace-nowrap">
                           {ticket.category}
                         </span>
-                        {ticket.confidence !== undefined && (
-                          <span className="block text-[11px] text-slate-400 dark:text-slate-400 mt-0.5">
-                            {Math.round(ticket.confidence * 100)}% conf
-                          </span>
-                        )}
                       </td>
 
                       {/* Intent */}

@@ -280,7 +280,7 @@ export const IntelligencePage: React.FC<IntelligencePageProps> = ({
                 <div key={issue.cluster_name} className="p-4 bg-slate-50 dark:bg-[#13263A] rounded-xl border border-slate-200 dark:border-[#23364D] space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-sm text-slate-900 dark:text-white">{issue.category}</span>
-                    <span className={`text-xs font-bold flex items-center gap-1 ${issue.trend_pct > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                    <span className={`text-xs font-bold flex items-center gap-1 ${issue.trend_pct > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-blue-700 dark:text-blue-400'}`}>
                       {issue.trend_pct > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : null}
                       {issue.trend_pct > 0 ? `+${issue.trend_pct}%` : `${issue.trend_pct}%`}
                     </span>
@@ -359,19 +359,19 @@ export const IntelligencePage: React.FC<IntelligencePageProps> = ({
                     <tr key={p.product_name} className="hover:bg-slate-50/50 dark:hover:bg-[#13263A]/50">
                       <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">{p.product_name}</td>
                       <td className="py-3.5 px-4">{p.complaint_count}</td>
-                      <td className="py-3.5 px-4 font-semibold text-rose-600 dark:text-rose-400">{p.defect_rate}%</td>
+                      <td className="py-3.5 px-4 font-semibold text-rose-600 dark:text-rose-400">{p.negative_sentiment_pct}%</td>
                       <td className="py-3.5 px-4">
                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                          p.return_risk === 'High'
+                          p.severity === 'High'
                             ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300'
-                            : p.return_risk === 'Medium'
+                            : p.severity === 'Medium'
                             ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300'
-                            : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300'
+                            : 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300'
                         }`}>
-                          {p.return_risk} Risk
+                          {p.severity} Risk
                         </span>
                       </td>
-                      <td className="py-3.5 px-4 text-xs text-slate-600 dark:text-slate-300">{p.primary_complaint_category}</td>
+                      <td className="py-3.5 px-4 text-xs text-slate-600 dark:text-slate-300">{p.dominant_category}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -392,7 +392,7 @@ export const IntelligencePage: React.FC<IntelligencePageProps> = ({
                     <th className="py-3.5 px-4">Customer Name</th>
                     <th className="py-3.5 px-4">Complaints</th>
                     <th className="py-3.5 px-4">Avg Urgency</th>
-                    <th className="py-3.5 px-4">Sentiment Trajectory</th>
+                    <th className="py-3.5 px-4">Top Category</th>
                     <th className="py-3.5 px-4">Churn Risk</th>
                   </tr>
                 </thead>
@@ -400,18 +400,18 @@ export const IntelligencePage: React.FC<IntelligencePageProps> = ({
                   {customersData.map((c) => (
                     <tr key={c.customer_name} className="hover:bg-slate-50/50 dark:hover:bg-[#13263A]/50">
                       <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">{c.customer_name}</td>
-                      <td className="py-3.5 px-4">{c.complaint_count}</td>
-                      <td className="py-3.5 px-4">{c.avg_urgency}/100</td>
-                      <td className="py-3.5 px-4 text-xs font-semibold capitalize text-slate-700 dark:text-slate-300">{c.sentiment_trend}</td>
+                      <td className="py-3.5 px-4">{c.total_complaints}</td>
+                      <td className="py-3.5 px-4">{c.average_urgency}/100</td>
+                      <td className="py-3.5 px-4 text-xs font-semibold text-slate-700 dark:text-slate-300">{c.dominant_category}</td>
                       <td className="py-3.5 px-4">
                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                          c.churn_risk === 'Critical' || c.churn_risk === 'High'
+                          c.risk_level === 'Critical' || c.risk_level === 'High'
                             ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300'
-                            : c.churn_risk === 'Medium'
+                            : c.risk_level === 'Medium'
                             ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300'
-                            : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300'
+                            : 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300'
                         }`}>
-                          {c.churn_risk} Churn Risk
+                          {c.risk_level} Churn Risk
                         </span>
                       </td>
                     </tr>

@@ -263,7 +263,7 @@ export const KnowledgeBasePage: React.FC<KnowledgeBasePageProps> = ({
                     <span className="font-mono">{selectedDoc.filename}</span>
                   </div>
                 </div>
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                   Indexed & Active
                 </span>
               </div>

@@ -222,8 +222,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
           <div className="text-xs font-medium text-slate-500">Resolved</div>
-          <div className="text-2xl font-black text-emerald-600 mt-1">{stats.resolved_complaints}</div>
-          <div className="text-[11px] text-emerald-500 mt-1">Completed actions</div>
+          <div className="text-2xl font-black text-blue-600 mt-1">{stats.resolved_complaints}</div>
+          <div className="text-[11px] text-blue-500 mt-1">Completed actions</div>
         </div>
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
@@ -254,7 +254,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                 <span className="w-2.5 h-2.5 rounded-full bg-slate-400"></span> Neutral
               </span>
               <span className="flex items-center gap-1 text-slate-600">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Positive
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span> Positive
               </span>
             </div>
           </div>
@@ -422,7 +422,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                     {issue.complaint_count} <span className="text-xs font-normal text-slate-500">complaints</span>
                   </div>
                   <div className={`text-xs font-bold flex items-center justify-end gap-0.5 mt-0.5 ${
-                    issue.trend_pct >= 0 ? 'text-rose-600' : 'text-emerald-600'
+                    issue.trend_pct >= 0 ? 'text-rose-600' : 'text-blue-600'
                   }`}>
                     {issue.trend_pct >= 0 ? (
                       <>

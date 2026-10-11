@@ -129,7 +129,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
             ? 'text-slate-400 dark:text-slate-400'
             : isWarning
             ? 'text-rose-600 dark:text-rose-400'
-            : 'text-emerald-700 dark:text-emerald-400'
+            : 'text-blue-700 dark:text-blue-400'
         }`}
       >
         {isPositive ? <TrendingUp className="w-3.5 h-3.5" /> : !isZero ? <TrendingDown className="w-3.5 h-3.5" /> : null}
@@ -271,7 +271,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
               <span className="w-3 h-3 rounded-full bg-slate-400 dark:bg-slate-600"></span> Neutral
             </span>
             <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
-              <span className="w-3 h-3 rounded-full bg-emerald-600 dark:bg-emerald-500"></span> Positive
+              <span className="w-3 h-3 rounded-full bg-blue-600 dark:bg-blue-500"></span> Positive
             </span>
           </div>
         </div>
@@ -289,8 +289,8 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
                   <stop offset="95%" stopColor="#94a3b8" stopOpacity={0}/>
                 </linearGradient>
                 <linearGradient id="posGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#2563eb" stopOpacity={0}/>
                 </linearGradient>
               </defs>
               <XAxis
@@ -316,7 +316,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
               />
               <Area type="monotone" dataKey="negative" stroke="#ef4444" strokeWidth={2} fillOpacity={1} fill="url(#negGrad)" name="Negative" />
               <Area type="monotone" dataKey="neutral" stroke="#94a3b8" strokeWidth={2} fillOpacity={1} fill="url(#neuGrad)" name="Neutral" />
-              <Area type="monotone" dataKey="positive" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#posGrad)" name="Positive" />
+              <Area type="monotone" dataKey="positive" stroke="#2563eb" strokeWidth={2} fillOpacity={1} fill="url(#posGrad)" name="Positive" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -369,8 +369,8 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
           </div>
 
           <div className="mt-6 pt-4 border-t border-slate-100 dark:border-[#23364D] flex items-center justify-between text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            <span>Customer Sentiment: {sentiment_breakdown.negative_pct}% Negative</span>
-            <span>Net Satisfaction: {sentiment_breakdown.positive_pct}% Positive</span>
+            <span>Customer Sentiment: {sentiment_breakdown.find(s => s.sentiment.toLowerCase() === 'negative')?.percentage ?? 0}% Negative</span>
+            <span>Net Satisfaction: {sentiment_breakdown.find(s => s.sentiment.toLowerCase() === 'positive')?.percentage ?? 0}% Positive</span>
           </div>
         </div>
 

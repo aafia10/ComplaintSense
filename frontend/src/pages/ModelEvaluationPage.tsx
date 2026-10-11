@@ -131,7 +131,7 @@ export const ModelEvaluationPage: React.FC = () => {
                     {Math.round(m.f1_score * 1000) / 10}%
                   </td>
                   <td className="py-3 px-4">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-50 text-blue-700">
                       Trained on Disk
                     </span>
                   </td>

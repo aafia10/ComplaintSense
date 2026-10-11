@@ -217,7 +217,7 @@ export const NLPAnalysisPage: React.FC<NLPAnalysisPageProps> = ({
                   <span className="text-xs font-medium text-slate-600">Classification:</span>
                   <span className={`text-xs font-extrabold px-2.5 py-0.5 rounded-full ${
                     analysisResult.sentiment === 'Negative' ? 'bg-rose-100 text-rose-800' :
-                    analysisResult.sentiment === 'Positive' ? 'bg-emerald-100 text-emerald-800' :
+                    analysisResult.sentiment === 'Positive' ? 'bg-blue-100 text-blue-800' :
                     'bg-slate-100 text-slate-700'
                   }`}>
                     {analysisResult.sentiment}

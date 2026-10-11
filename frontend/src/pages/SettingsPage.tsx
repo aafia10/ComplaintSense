@@ -125,15 +125,15 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({
       </div>
 
       {success && (
-        <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-sm text-emerald-800 dark:text-emerald-300 flex items-center gap-2 font-medium">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+        <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-sm text-blue-900 dark:text-blue-300 flex items-center gap-2 font-medium">
+          <CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           <span>Workspace configuration saved successfully!</span>
         </div>
       )}
 
       {resetSuccess && (
-        <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-sm text-emerald-800 dark:text-emerald-300 flex items-center gap-2 font-medium">
-          <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+        <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-sm text-blue-900 dark:text-blue-300 flex items-center gap-2 font-medium">
+          <CheckCircle2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           <span>Demo complaint database successfully reset to pristine state.</span>
         </div>
       )}
