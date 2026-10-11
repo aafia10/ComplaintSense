@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
+import { AdminHelperChatbot } from './AdminHelperChatbot';
 import { Workspace } from '../api/client';
 
 interface AppLayoutProps {
@@ -58,6 +59,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           {children}
         </main>
       </div>
+
+      {/* Global Floating Admin Helper Chatbot for Non-Technical Administrators */}
+      <AdminHelperChatbot
+        onNavigateTab={setCurrentTab}
+        onOpenNewComplaint={onOpenNewComplaint}
+        onOpenDemoModal={onOpenDemoModal}
+      />
     </div>
   );
 };

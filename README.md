@@ -31,7 +31,7 @@ Customer Complaint
         │
         ├──► Discover (Similarity, Recurring Clusters, Time Trends, Root-Cause Patterns)
         │
-        └──► Act (Department Recommendation, Policy Retrieval, Human-Reviewed Response)
+        └──► Act (SLA Tracking, Playbooks, Department Recommendation, Human-Reviewed Response)
 ```
 
 The platform answers critical business questions:
@@ -41,6 +41,7 @@ The platform answers critical business questions:
 - *Are there other similar complaints occurring across the company?*
 - *Is this issue emerging into a trend, and what is the probable operational root cause?*
 - *What does corporate policy dictate, and what empathetic response draft can assist the support agent?*
+- *How can a non-technical administrator easily operate, navigate, and manage the platform without technical complexity?*
 
 ---
 
@@ -51,6 +52,7 @@ ComplaintSense is built specifically to execute on a standard laptop with zero p
 - **Local Machine Learning**: Scikit-learn (Multinomial Naive Bayes, Logistic Regression, Linear SVM) and NLTK (VADER sentiment analysis, WordNet lemmatizer, tokenizers).
 - **Embedded Database**: Local SQLite (`complaintsense.db`) with SQLAlchemy ORM structured with `workspace_id` for SaaS multi-tenancy.
 - **Zero Cloud Vector Databases**: Semantic similarity and local knowledge retrieval are powered entirely by offline TF-IDF and cosine similarity engines.
+- **Embedded Admin Copilot**: Local, offline helper chatbot assisting administrators with zero external network overhead.
 - **No Docker Required**: Native, lightweight startup via Python virtual environments and Vite.
 
 ---
@@ -59,9 +61,15 @@ ComplaintSense is built specifically to execute on a standard laptop with zero p
 
 ```mermaid
 graph TD
-    User["Customer / Support Agent / Manager"] --> Frontend["React + Vite + TypeScript + Tailwind UI (Port 5173)"]
+    User["Customer / Support Agent / Non-Tech Admin"] --> Frontend["React + Vite + TypeScript + Tailwind UI (Port 5173)"]
     Frontend --> API["FastAPI REST Backend (Port 8000)"]
     
+    subgraph "Frontend Layer"
+        Frontend --> Chatbot["Admin Helper Chatbot (Plain-English Copilot)"]
+        Frontend --> Theme["Theme Engine (Navy & White / Dark Navy)"]
+        Frontend --> Views["Executive Overview | Complaints | Intelligence | KB | NLP Lab"]
+    end
+
     subgraph "Backend Services Layer"
         API --> DB[("SQLite Database (complaintsense.db)")]
         API --> NLPEngine["Core NLP Pipeline Engine"]
@@ -82,7 +90,75 @@ graph TD
 
 ---
 
-## 4. Core NLP Pipeline
+## 4. Key SaaS Features & Workflow Capabilities
+
+### 🤖 1. Admin Helper Chatbot (For Non-Technical Administrators)
+- **Plain-English Copilot**: Floating assistant widget accessible globally across all views (`fixed bottom-5 right-5`).
+- **Zero Technical Jargon**: Explains complex NLP concepts (confidence thresholds, sentiment scores, vector similarity) in simple business language.
+- **One-Click Quick Topic Chips**:
+  - *How to Resolve a Ticket* (6-step guided walkthrough)
+  - *Understanding SLA Deadlines* (Urgency levels & breach targets)
+  - *Duplicate Complaint Detection* (82%+ similarity matching & parent linking)
+  - *Importing CSV Complaints* (Spreadsheet column format & upload)
+  - *What is 'Needs Review'?* (Low-confidence queue & model feedback)
+  - *Adding SOPs & Policies* (Knowledge Base gap filling)
+  - *Sentiment & Urgency Scores* (Plain explanation of emotional tones)
+  - *When to Escalate* (Executive & operational escalation rules)
+  - *Resolution Playbooks* (Interactive SOP checklists)
+- **Direct 1-Click Navigation**: In-chat action buttons directly navigate the admin to the target view (e.g., *Open Complaints List*, *Open Knowledge Base*, *Go to Settings*).
+
+### ⏱️ 2. Complaint SLA Resolution Tracker
+- **Severity-Calibrated Deadlines**:
+  - `Critical Urgency`: **4 Hours** target
+  - `High Urgency`: **12 Hours** target
+  - `Medium Urgency`: **24 Hours** target
+  - `Low Urgency`: **48 Hours** target
+- **Elapsed & Remaining Calculations**: Calculated in real-time from complaint timestamps.
+- **Visual Status Badges**: Clear visual differentiation for *Within SLA Target*, *SLA Breached*, and *Resolved in SLA*.
+- **Visual Progress Bar**: Real-time progress bar showing percentage of allotted SLA window elapsed.
+
+### 🔄 3. Complaint Lifecycle Timeline
+- **6-Stage Visual Stepper**:
+  1. **Ingested**: Received, sanitized, and queued
+  2. **NLP Analyzed**: Intent, emotion, and named entities extracted
+  3. **Auto-Routed**: Department assignment determined
+  4. **Draft Generated**: Policy-grounded draft synthesized
+  5. **Human Review**: Agent inspection, tone adjustment, and approval
+  6. **Resolved**: Final resolution delivered and ticket closed
+- **Adaptive Step Highlighting**: Dynamically tracks progress based on ticket state, response draft approvals, and escalations.
+
+### 📋 4. Interactive Complaint Resolution Playbooks
+- **Category-Tailored SOP Checklists**:
+  - **Delivery & Logistics**: Audit carrier API scans, check Mumbai hub delay thresholds, verify recipient availability, dispatch replacement/penalty claim.
+  - **Billing & Refund**: Verify payment gateway webhook, audit duplicate ledger capture, check $100 refund threshold, issue credit note.
+  - **Product Defect**: Inspect batch code, match defect registry, dispatch prepaid RMA label, schedule pickup.
+  - **Technical Support**: Collect client logs, query knowledge base workarounds, verify credentials, escalate patch to Tier-2.
+- **Interactive Checkboxes**: Administrators can check off steps as work progresses, displaying live progress counters (e.g., `3/5 Completed`).
+
+### 🔍 5. Duplicate Complaint Detection
+- **Semantic Cosine Similarity ($\ge 82\%$)**: Identifies repeated complaints from the same customer or identical grievances submitted in parallel.
+- **Alert Banner & Parent Linking**: Displays match percentage, original ticket ID, submission date, and a direct 1-click button to view the parent complaint.
+
+### ⚠️ 6. Low-Confidence Review Queue
+- **Dedicated 'Needs Review' Tab**: Automatically filters complaints where classification confidence falls below 75%.
+- **Human-in-the-Loop Feedback**: Agents correct categories or intents, logging structured drift feedback to retrain local ML models.
+
+### 📚 7. Knowledge-Gap Detection & SOP Drafting
+- **Automated Detection**: Flags recurring complaint clusters that lack high-similarity internal documentation ($\text{similarity} < 0.60$).
+- **One-Click SOP Drafting**: Prepopulates an SOP creation dialog with suggested titles and actionable operational guidelines.
+
+### 📁 8. CSV Bulk Import & Export
+- **Spreadsheet Ingestion Modal**: Validation, column preview, error checking, and downloadable template support.
+- **Full Database Export**: One-click SQLite backup streaming and CSV export via Settings.
+
+### 🎨 9. Strict Navy-Blue & White Visual Identity + Dark Theme
+- **Strict Brand Palette**: Standardized `#0F2A5F` (primary navy), `#163A7A` (brand navy), and `#2563EB` (accent blue) across all pages, charts, tables, and badges. **Zero green or emerald styling**.
+- **Dark Mode Engine**: Persistent Dark Navy surfaces (`#07111F` / `#0D1B2A` / `#13263A`) with instant top-bar toggle and `localStorage` persistence.
+- **Responsive Layout**: Mobile/tablet slide-out drawer navigation with backdrop blur, 44px+ touch targets, and zero horizontal scrolling.
+
+---
+
+## 5. Core NLP Pipeline
 
 Every complaint ingested by ComplaintSense undergoes a transparent, explainable 10-step NLP pipeline:
 
@@ -112,7 +188,7 @@ Customer Complaint
 
 ---
 
-## 5. Preconfigured Multi-Industry Demo Environments
+## 6. Preconfigured Multi-Industry Demo Environments
 
 To demonstrate generalizability, ComplaintSense ships with **4 fully populated demo company workspaces**, each containing 30–60 realistic complaints and 5 dedicated local policy documents:
 
@@ -125,7 +201,7 @@ To demonstrate generalizability, ComplaintSense ships with **4 fully populated d
 
 ### The Signature Demonstration Scenario (ShopEase)
 In **ShopEase**, an intentional cluster of complaints highlights delayed deliveries in Mumbai fulfilled by *SpeedFast Logistics*. 
-When opening the **Dashboard** or **Management Intelligence** page, the system automatically detects:
+When opening the **Executive Overview** or **Intelligence Hub** page, the system automatically detects:
 - **Emerging Issue**: Delivery Delays (+35% trend increase).
 - **Possible Pattern**: Co-occurrence of *SpeedFast Logistics* shipments in *Mumbai*.
 - **Most Affected Location**: *Mumbai*.
@@ -135,7 +211,7 @@ When opening the **Dashboard** or **Management Intelligence** page, the system a
 
 ---
 
-## 6. Project Structure
+## 7. Project Structure
 
 ```text
 complaintsense/
@@ -184,20 +260,27 @@ complaintsense/
 ├── frontend/
 │   ├── src/
 │   │   ├── api/client.ts         # TypeScript API fetch client and schema types
-│   │   ├── components/           # AppLayout, Sidebar, TopBar, CsvImportModal, Modals
+│   │   ├── components/           # AppLayout, Sidebar, TopBar, AdminHelperChatbot, Modals
+│   │   │   ├── AdminHelperChatbot.tsx # Non-tech admin copilot with quick topic chips
+│   │   │   ├── AppLayout.tsx     # Shell layout with responsive drawer & embedded copilot
+│   │   │   ├── Sidebar.tsx       # Persistent desktop sidebar & mobile drawer
+│   │   │   ├── TopBar.tsx        # Breadcrumbs, workspace switcher, theme toggle
+│   │   │   └── CsvImportModal.tsx# CSV preview & batch ingestion dialog
+│   │   ├── context/
+│   │   │   └── ThemeContext.tsx  # Light/Dark mode state with localStorage persistence
 │   │   ├── pages/
-│   │   │   ├── LandingPage.tsx   # Product landing with calm emerald theme
 │   │   │   ├── OverviewPage.tsx  # Executive dashboard with 7d/30d/90d period KPIs
-│   │   │   ├── ComplaintsPage.tsx# 8-column data grid, "Needs Review" filter, CSV bulk import
-│   │   │   ├── ComplaintDetailPage.tsx # 3-column dossier, duplicate alert, tone variations, quality check, feedback
-│   │   │   ├── IntelligencePage.tsx    # Trends, recurring issues drilldown, products & customers
-│   │   │   ├── NLPLabPage.tsx          # 5-tab unified laboratory (Explain, Compare, Metrics, Pipeline, Health)
-│   │   │   ├── KnowledgeBasePage.tsx   # Knowledge gap detector, SOP drafter, document browser
-│   │   │   └── SettingsPage.tsx        # Profile, categories, departments, Data Operations & DB backup
-│   │   ├── App.tsx               # Application routing and layout integration
-│   │   ├── index.css             # Tailwind CSS directives
-│   │   └── main.tsx              # React DOM root
-│   ├── package.json
+│   │   │   ├── ComplaintsPage.tsx# 8-column table, mobile stacked cards, Needs Review tab
+│   │   │   ├── ComplaintDetailPage.tsx # Dossier, SLA tracker, lifecycle timeline, playbooks
+│   │   │   ├── IntelligencePage.tsx    # Shift trends, recurring issues, products & customers
+│   │   │   ├── NLPLabPage.tsx          # Model comparison, confusion matrix, health
+│   │   │   ├── KnowledgeBasePage.tsx   # Gap detector, SOP drafter, document browser
+│   │   │   ├── SettingsPage.tsx        # Profile, categories, departments, Data Operations
+│   │   │   └── LandingPage.tsx   # SaaS landing page with dark blue theme
+│   │   ├── App.tsx               # Route controller and modal coordinators
+│   │   ├── index.css             # Base styles, 16px root typography, scrollbars
+│   │   └── main.tsx              # React DOM root with ThemeProvider
+│   ├── package.json              # complaintsense-ui package
 │   └── tsconfig.json
 ├── knowledge_base/               # Local policy documents across demo companies
 ├── models/                       # Serialized joblib classifiers and TF-IDF vectorizer
@@ -212,7 +295,7 @@ complaintsense/
 
 ---
 
-## 7. Quickstart Installation Guide
+## 8. Quickstart Installation Guide
 
 ### Prerequisites
 - Python 3.10+ (tested on Python 3.11, 3.12, 3.13)
@@ -277,7 +360,7 @@ npm run dev
 
 ---
 
-## 8. Automated Verification & Testing
+## 9. Automated Verification & Testing
 
 To run the automated backend test suite covering NLP modules, intelligence calculations, repositories, feedback, explainability, response quality, and API endpoints:
 ```bash
@@ -314,7 +397,7 @@ backend/tests/test_nlp.py::test_named_entity_recognition PASSED          [ 90%]
 backend/tests/test_nlp.py::test_classification PASSED                    [ 95%]
 backend/tests/test_nlp.py::test_similarity_search PASSED                 [100%]
 
-====================== 21 passed in 18.35s =======================
+====================== 21 passed in 27.76s =======================
 ```
 
 To test the frontend production build:
@@ -323,45 +406,6 @@ cd frontend
 npm run build
 ```
 *(Produces a zero-error optimized bundle in `frontend/dist`).*
-
----
-
-## 9. Advanced SaaS Intelligence Capabilities
-
-ComplaintSense implements a complete enterprise SaaS intelligence workflow:
-
-### 1. Repository Pattern & Clean Decoupled Architecture
-- `BaseRepository`: Generic CRUD with pagination, ordering, and workspace scoping.
-- `TicketRepository`: Specialized ticket queries, period-over-period aggregate metrics, and low-confidence filtering.
-- `FeedbackRepository`: Captures human review corrections for continuous model monitoring.
-- `KnowledgeRepository` & `WorkspaceRepository`: Manage policies and multi-tenant configurations.
-
-### 2. Multi-Tone Response Generation & Real-Time Quality Check
-- **4 Support Tones**: `Professional`, `Empathetic`, `Concise`, and `Formal`.
-- **Response Quality Rules Engine**: Real-time evaluation verifying:
-  - Greeting presence
-  - Direct intent acknowledgment
-  - Entity referencing (Order ID, Amount, Product)
-  - Clear next steps and SLA commitments
-  - Professional agent sign-off
-
-### 3. Transparent NLP Explainability
-- Top TF-IDF n-gram drivers with positive/negative logit contributions.
-- Urgency score breakdown across 5 signal families (Legal, Financial, Time Pressure, Repeat, Safety).
-- Intent classification trigger phrases and keyword matches.
-
-### 4. Automated Knowledge Gap Detection
-- Identifies complaint clusters that lack matching internal SOP documentation.
-- One-click **"Draft SOP"** generation producing structured policy templates.
-
-### 5. Product & Customer Risk Intelligence
-- **Product Risk Index**: Calculates return risk, defect rate, and financial impact by SKU.
-- **Customer Churn Risk**: Identifies repeat complainants, tracks sentiment trajectories, and flags high-risk accounts.
-
-### 6. Data Operations & Disaster Recovery
-- **One-Click SQLite Backup**: `GET /api/data/export-db` streams the database snapshot.
-- **CSV Data Pipeline**: 3-step bulk ingestion modal (Upload $\to$ Validate & Preview $\to$ Batch NLP Ingestion).
-- **Demo Reset**: Instant restoration of baseline demo datasets.
 
 ---
 
@@ -380,19 +424,6 @@ ComplaintSense values academic honesty. Classifier metrics are generated from st
 
 ---
 
-## 11. Future SaaS Roadmap (Phase 2)
-
-While the local MVP provides a complete, polished, functional intelligence pipeline, the architecture is designed to scale into a commercial multi-tenant SaaS:
-
-- **Enterprise Ingestion**: Webhooks and native connectors for Zendesk, Freshdesk, Salesforce Service Cloud, and Intercom.
-- **Omnichannel Support**: Inbound customer email parsing and WhatsApp Business API integration.
-- **Enterprise Multi-Tenancy**: Migration from SQLite to partitioned PostgreSQL with Row-Level Security (RLS).
-- **Hybrid Neural Retrieval**: Optional dense semantic vector indexing using `sentence-transformers` and local Chroma/FAISS storage.
-- **Self-Hosted LLMs**: Local quantized LLM integration (e.g., via Ollama/llama.cpp) to supplement template-based response generation.
-
----
-
-## 12. License
+## 11. License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
-
