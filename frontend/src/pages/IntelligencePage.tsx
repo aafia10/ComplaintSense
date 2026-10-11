@@ -14,7 +14,9 @@ import {
   ArrowRight,
   ExternalLink,
   ChevronRight,
-  X
+  X,
+  Flame,
+  Info
 } from 'lucide-react';
 import {
   BarChart,
@@ -32,6 +34,7 @@ import {
   ProductIntelligenceItem,
   CustomerIntelligenceItem
 } from '../api/client';
+import { useTheme } from '../context/ThemeContext';
 
 interface IntelligencePageProps {
   activeWorkspace: Workspace;
@@ -42,6 +45,9 @@ export const IntelligencePage: React.FC<IntelligencePageProps> = ({
   activeWorkspace,
   onSelectTicket,
 }) => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
   const [activeTab, setActiveTab] = useState<'overview' | 'trends' | 'recurring' | 'products' | 'customers' | 'locations'>('overview');
   const [trendsData, setTrendsData] = useState<any>(null);
   const [productsData, setProductsData] = useState<ProductIntelligenceItem[]>([]);
@@ -62,27 +68,29 @@ export const IntelligencePage: React.FC<IntelligencePageProps> = ({
     try {
       setLoading(true);
       setError(null);
-      const [trends, products, customers] = await Promise.all([
+      const [tRes, pRes, cRes] = await Promise.all([
         fetchApi<any>(`/intelligence/trends?workspace_id=${activeWorkspace.id}`),
         fetchApi<ProductIntelligenceItem[]>(`/intelligence/products?workspace_id=${activeWorkspace.id}`),
         fetchApi<CustomerIntelligenceItem[]>(`/intelligence/customers?workspace_id=${activeWorkspace.id}`),
       ]);
-      setTrendsData(trends);
-      setProductsData(products);
-      setCustomersData(customers);
+      setTrendsData(tRes);
+      setProductsData(pRes);
+      setCustomersData(cRes);
     } catch (err: any) {
-      setError(err.message || 'Failed to load intelligence analytics');
+      setError(err.message || 'Failed to load intelligence data');
     } finally {
       setLoading(false);
     }
   };
 
   const handleOpenClusterDrilldown = async (clusterName: string) => {
+    setSelectedCluster(clusterName);
     try {
-      setSelectedCluster(clusterName);
       setClusterLoading(true);
-      const res = await fetchApi<any>(`/intelligence/clusters/${encodeURIComponent(clusterName)}/complaints?workspace_id=${activeWorkspace.id}`);
-      setClusterComplaints(res.complaints || []);
+      const complaints = await fetchApi<any[]>(
+        `/intelligence/clusters/${encodeURIComponent(clusterName)}/complaints?workspace_id=${activeWorkspace.id}`
+      );
+      setClusterComplaints(complaints);
     } catch (err) {
       console.error(err);
       setClusterComplaints([]);
@@ -93,42 +101,51 @@ export const IntelligencePage: React.FC<IntelligencePageProps> = ({
 
   if (loading) {
     return (
-      <div className="p-16 max-w-7xl mx-auto text-center">
-        <div className="w-8 h-8 border-3 border-emerald-700 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
-        <p className="text-xs text-slate-500 font-medium">Aggregating cross-department intelligence patterns...</p>
+      <div className="p-16 max-w-7xl mx-auto text-center space-y-3">
+        <div className="w-9 h-9 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Mining complaint clusters & cross-functional trends...</p>
       </div>
     );
   }
 
   if (error || !trendsData) {
     return (
-      <div className="p-8 max-w-7xl mx-auto">
-        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs">
+      <div className="p-6 sm:p-8 max-w-7xl mx-auto">
+        <div className="p-6 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-sm">
           Failed to load intelligence data: {error}
         </div>
       </div>
     );
   }
 
+  const tooltipStyle = {
+    backgroundColor: isDark ? '#0D1B2A' : '#FFFFFF',
+    borderRadius: '12px',
+    border: isDark ? '1px solid #23364D' : '1px solid #E2E8F0',
+    color: isDark ? '#F8FAFC' : '#0F172A',
+    fontSize: '12px',
+    boxShadow: '0 8px 16px -4px rgba(0, 0, 0, 0.15)',
+  };
+
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="pb-4 border-b border-slate-200/80">
-        <div className="flex items-center gap-2 mb-1">
-          <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
+      <div className="pb-4 border-b border-slate-200 dark:border-[#23364D]">
+        <div className="flex flex-wrap items-center gap-2 mb-1">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             Intelligence & Discovery
           </h1>
-          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/50">
-            Understand → Discover
+          <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+            Understand → Discover → Act
           </span>
         </div>
-        <p className="text-xs text-slate-500">
-          Root-cause pattern detection, recurring clusters, product risk ranking, and repeat complainant tracking.
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Proactive root-cause pattern detection, recurring complaint clusters, product defect risk, and churn signals.
         </p>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 overflow-x-auto text-xs font-semibold">
+      {/* Horizontally Scrollable Navigation Tabs (Touch-friendly & Responsive) */}
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-[#23364D] overflow-x-auto no-scrollbar text-sm font-semibold pb-1">
         {[
           { id: 'overview', label: 'Overview' },
           { id: 'trends', label: 'Trends' },
@@ -140,10 +157,10 @@ export const IntelligencePage: React.FC<IntelligencePageProps> = ({
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`pb-2.5 px-3 border-b-2 transition-all whitespace-nowrap cursor-pointer ${
+            className={`pb-3 px-4 border-b-2 transition-all whitespace-nowrap cursor-pointer min-h-[44px] flex items-center ${
               activeTab === tab.id
-                ? 'border-emerald-700 text-emerald-800 font-bold'
-                : 'border-transparent text-slate-500 hover:text-slate-900'
+                ? 'border-[#0F2A5F] dark:border-blue-400 text-[#0F2A5F] dark:text-blue-400 font-bold'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             {tab.label}
@@ -151,41 +168,43 @@ export const IntelligencePage: React.FC<IntelligencePageProps> = ({
         ))}
       </div>
 
-      {/* TAB 1: OVERVIEW */}
+      {/* ================= TAB 1: OVERVIEW ================= */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
           {/* Possible Root Cause Patterns */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <h2 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
-                  <Compass className="w-4 h-4 text-emerald-700" />
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Compass className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   <span>Identified Root-Cause Hypotheses</span>
                 </h2>
-                <p className="text-xs text-slate-400">Co-occurrences of external entities, locations, and failure modes</p>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                  Linguistic and operational co-occurrences of entities, logistics hubs, and failure modes
+                </p>
               </div>
-              <span className="text-[10px] font-medium text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/60">
-                Transparently Disclaimed: Possible Root Cause
+              <span className="self-start sm:self-auto text-xs font-semibold text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/50 px-3 py-1 rounded-full border border-amber-200 dark:border-amber-800">
+                Possible Root-Cause Pattern (Academic Integrity)
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {trendsData.possible_root_causes && trendsData.possible_root_causes.length > 0 ? (
                 trendsData.possible_root_causes.map((rc: any, idx: number) => (
                   <div
                     key={idx}
-                    className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-2xs hover:border-emerald-500 transition flex flex-col justify-between"
+                    className="bg-white dark:bg-[#0D1B2A] p-5 rounded-2xl border border-slate-200 dark:border-[#23364D] shadow-card hover:border-blue-400 dark:hover:border-blue-500 transition flex flex-col justify-between"
                   >
                     <div>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/50">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-blue-900 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">
                           {rc.pattern_name}
                         </span>
-                        <span className="text-xs font-bold text-slate-500">{rc.count} complaints</span>
+                        <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{rc.count} complaints</span>
                       </div>
-                      <h3 className="text-xs font-bold text-slate-900 mb-2">{rc.associated_factor}</h3>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-2 leading-snug">{rc.associated_factor}</h3>
 
-                      <div className="space-y-1 text-xs text-slate-600">
+                      <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300">
                         {rc.affected_location && (
                           <div className="flex items-center gap-1.5">
                             <MapPin className="w-3.5 h-3.5 text-rose-500" />
@@ -194,7 +213,7 @@ export const IntelligencePage: React.FC<IntelligencePageProps> = ({
                         )}
                         {rc.affected_entity && (
                           <div className="flex items-center gap-1.5">
-                            <Building2 className="w-3.5 h-3.5 text-emerald-700" />
+                            <Building2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                             <span>Entity: <strong>{rc.affected_entity}</strong></span>
                           </div>
                         )}
@@ -202,46 +221,46 @@ export const IntelligencePage: React.FC<IntelligencePageProps> = ({
                     </div>
 
                     {rc.recommendation && (
-                      <div className="mt-3 pt-2.5 border-t border-slate-100 text-xs text-slate-700 bg-slate-50/70 p-2 rounded-lg">
-                        <span className="font-semibold text-emerald-800 block text-[11px]">Recommended Directive:</span>
+                      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-[#23364D] text-xs text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-[#13263A] p-3 rounded-xl">
+                        <span className="font-bold text-blue-900 dark:text-blue-300 block mb-0.5">Recommended Directive:</span>
                         {rc.recommendation}
                       </div>
                     )}
                   </div>
                 ))
               ) : (
-                <div className="p-8 text-center text-xs text-slate-400 col-span-3">No distinct root causes detected.</div>
+                <div className="p-8 text-center text-sm text-slate-400 col-span-3">No distinct root causes detected.</div>
               )}
             </div>
           </div>
 
           {/* Department Workload & Customer Intents */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-2xs">
-              <h3 className="text-sm font-bold text-slate-900 mb-1">Customer Underlying Intents</h3>
-              <p className="text-xs text-slate-400 mb-4">What customers want (Refund, Replacement, Status, etc.)</p>
-              <div className="h-56">
+            <div className="bg-white dark:bg-[#0D1B2A] p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-[#23364D] shadow-card">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">Customer Underlying Intents</h3>
+              <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-400 mb-4">What customers want (Refund, Replacement, Status, etc.)</p>
+              <div className="h-60 sm:h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={trendsData.top_intents} layout="vertical">
-                    <XAxis type="number" tick={{ fontSize: 10 }} />
-                    <YAxis dataKey="intent" type="category" width={130} tick={{ fontSize: 10 }} />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#047857" radius={[0, 4, 4, 0]} />
+                  <BarChart data={trendsData.top_intents} layout="vertical" margin={{ left: -10, right: 10 }}>
+                    <XAxis type="number" tick={{ fontSize: 11, fill: isDark ? '#94A3B8' : '#64748B' }} axisLine={{ stroke: isDark ? '#23364D' : '#E2E8F0' }} />
+                    <YAxis dataKey="intent" type="category" width={140} tick={{ fontSize: 11, fill: isDark ? '#94A3B8' : '#64748B' }} axisLine={{ stroke: isDark ? '#23364D' : '#E2E8F0' }} />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Bar dataKey="count" fill={isDark ? '#3B82F6' : '#0F2A5F'} radius={[0, 6, 6, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
-            <div className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-2xs">
-              <h3 className="text-sm font-bold text-slate-900 mb-1">Department Workload Distribution</h3>
-              <p className="text-xs text-slate-400 mb-4">Required operational bandwidth across divisions</p>
-              <div className="h-56">
+            <div className="bg-white dark:bg-[#0D1B2A] p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-[#23364D] shadow-card">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">Department Workload Distribution</h3>
+              <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-400 mb-4">Operational bandwidth requirements across support units</p>
+              <div className="h-60 sm:h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={trendsData.department_workload}>
-                    <XAxis dataKey="department" tick={{ fontSize: 10 }} />
-                    <YAxis tick={{ fontSize: 10 }} />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#0f766e" radius={[4, 4, 0, 0]} />
+                  <BarChart data={trendsData.department_workload} margin={{ left: -20, right: 10 }}>
+                    <XAxis dataKey="department" tick={{ fontSize: 11, fill: isDark ? '#94A3B8' : '#64748B' }} axisLine={{ stroke: isDark ? '#23364D' : '#E2E8F0' }} />
+                    <YAxis tick={{ fontSize: 11, fill: isDark ? '#94A3B8' : '#64748B' }} axisLine={{ stroke: isDark ? '#23364D' : '#E2E8F0' }} />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Bar dataKey="count" fill={isDark ? '#60A5FA' : '#2563EB'} radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -250,97 +269,26 @@ export const IntelligencePage: React.FC<IntelligencePageProps> = ({
         </div>
       )}
 
-      {/* TAB 2: TRENDS */}
+      {/* ================= TAB 2: TRENDS ================= */}
       {activeTab === 'trends' && (
         <div className="space-y-6">
-          <div className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-2xs">
-            <h2 className="text-sm font-bold text-slate-900 mb-1">Intake Timeline & Historical Trajectory</h2>
-            <p className="text-xs text-slate-400 mb-4">Time-series volume evolution with sentiment distribution</p>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={trendsData.trends}>
-                  <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Area type="monotone" dataKey="negative" stackId="1" stroke="#f43f5e" fill="#f43f5e" fillOpacity={0.7} />
-                  <Area type="monotone" dataKey="neutral" stackId="1" stroke="#cbd5e1" fill="#cbd5e1" fillOpacity={0.7} />
-                  <Area type="monotone" dataKey="positive" stackId="1" stroke="#059669" fill="#059669" fillOpacity={0.7} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {trendsData.top_categories?.map((cat: any) => (
-              <div key={cat.category} className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
-                <div>
-                  <span className="font-semibold text-xs text-slate-800 block">{cat.category}</span>
-                  <span className="text-[11px] text-slate-400">Total reported complaints</span>
-                </div>
-                <span className="text-lg font-bold text-emerald-800">{cat.count}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* TAB 3: RECURRING ISSUES (with drill-down) */}
-      {activeTab === 'recurring' && (
-        <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-              <div>
-                <h2 className="text-sm font-bold text-slate-900">Mathematically Aggregated Issue Clusters</h2>
-                <p className="text-xs text-slate-400">Click any cluster to inspect constituent complaints</p>
-              </div>
-              <span className="text-xs text-slate-500 font-medium">
-                {trendsData.recurring_issues?.length || 0} active clusters
-              </span>
-            </div>
-
-            <div className="divide-y divide-slate-100">
-              {trendsData.recurring_issues?.map((issue: any, idx: number) => (
-                <div
-                  key={idx}
-                  onClick={() => handleOpenClusterDrilldown(issue.cluster_name)}
-                  className="p-4 hover:bg-slate-50/80 transition flex items-center justify-between cursor-pointer group"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-bold text-slate-900 group-hover:text-emerald-800 transition">
-                        {issue.cluster_name}
-                      </span>
-                      {issue.is_emerging && (
-                        <span className="text-[10px] font-bold uppercase bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded">
-                          Emerging
-                        </span>
-                      )}
-                      <span className="text-xs text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.2 rounded border border-emerald-200/50">
-                        {issue.complaint_count} tickets
-                      </span>
-                    </div>
-
-                    {issue.possible_root_cause && (
-                      <p className="text-xs text-slate-600">
-                        <span className="font-semibold text-slate-700">Root-Cause Pattern:</span> {issue.possible_root_cause}
-                      </p>
-                    )}
-
-                    <div className="flex flex-wrap gap-1 mt-1.5">
-                      {issue.common_terms?.slice(0, 4).map((t: string, ti: number) => (
-                        <span key={ti} className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
-                          {t}
-                        </span>
-                      ))}
-                    </div>
+          <div className="bg-white dark:bg-[#0D1B2A] p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-[#23364D] shadow-card">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">Period-Over-Period Category Shift</h3>
+            <p className="text-xs sm:text-sm text-slate-400 dark:text-slate-400 mb-5">Velocity of complaint categories in recent windows</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {trendsData.recurring_issues?.map((issue: any) => (
+                <div key={issue.cluster_name} className="p-4 bg-slate-50 dark:bg-[#13263A] rounded-xl border border-slate-200 dark:border-[#23364D] space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-sm text-slate-900 dark:text-white">{issue.category}</span>
+                    <span className={`text-xs font-bold flex items-center gap-1 ${issue.trend_pct > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
+                      {issue.trend_pct > 0 ? <TrendingUp className="w-3.5 h-3.5" /> : null}
+                      {issue.trend_pct > 0 ? `+${issue.trend_pct}%` : `${issue.trend_pct}%`}
+                    </span>
                   </div>
-
-                  <div className="flex items-center gap-3 shrink-0 ml-4">
-                    <div className="text-right">
-                      <span className="text-xs font-bold text-rose-600 block">+{issue.trend_pct}% growth</span>
-                      <span className="text-[10px] text-slate-400">Drill down →</span>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-700 transition" />
+                  <p className="text-xs text-slate-600 dark:text-slate-300">{issue.cluster_name}</p>
+                  <div className="text-xs text-slate-400 pt-1 border-t border-slate-200 dark:border-[#23364D] flex justify-between">
+                    <span>Complaints: {issue.count}</span>
+                    <span>Avg Urgency: {issue.avg_urgency}/100</span>
                   </div>
                 </div>
               ))}
@@ -349,138 +297,41 @@ export const IntelligencePage: React.FC<IntelligencePageProps> = ({
         </div>
       )}
 
-      {/* TAB 4: PRODUCTS */}
-      {activeTab === 'products' && (
-        <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
-          <div className="p-4 border-b border-slate-200">
-            <h2 className="text-sm font-bold text-slate-900">Product Quality & Defect Intelligence</h2>
-            <p className="text-xs text-slate-400">Ranked by overall operational risk score (Volume × Urgency × Negative Ratio)</p>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50/90 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[10px]">
-                <tr>
-                  <th className="py-3 px-4">Product Name</th>
-                  <th className="py-3 px-4">Complaints</th>
-                  <th className="py-3 px-4">Avg Urgency</th>
-                  <th className="py-3 px-4">Primary Category</th>
-                  <th className="py-3 px-4">Top Intent</th>
-                  <th className="py-3 px-4">Negative %</th>
-                  <th className="py-3 px-4">Risk Severity</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {productsData.map((p) => (
-                  <tr key={p.product_name} className="hover:bg-slate-50/60">
-                    <td className="py-3 px-4 font-bold text-slate-900">{p.product_name}</td>
-                    <td className="py-3 px-4 font-semibold text-slate-700">{p.complaint_count}</td>
-                    <td className="py-3 px-4 font-mono font-medium text-slate-800">{p.average_urgency} / 100</td>
-                    <td className="py-3 px-4">
-                      <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[11px] font-medium">
-                        {p.dominant_category}
+      {/* ================= TAB 3: RECURRING ISSUES ================= */}
+      {activeTab === 'recurring' && (
+        <div className="space-y-4">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+            Click any recurring issue cluster to open constituent tickets in a detailed review drawer.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {trendsData.recurring_issues?.map((issue: any) => (
+              <div
+                key={issue.cluster_name}
+                onClick={() => handleOpenClusterDrilldown(issue.cluster_name)}
+                className="bg-white dark:bg-[#0D1B2A] p-5 rounded-2xl border border-slate-200 dark:border-[#23364D] shadow-card hover:border-blue-400 dark:hover:border-blue-500 transition cursor-pointer flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-blue-900 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">
+                      {issue.category}
+                    </span>
+                    {issue.is_emerging && (
+                      <span className="text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                        <Flame className="w-3.5 h-3.5" /> Emerging (+{issue.trend_pct}%)
                       </span>
-                    </td>
-                    <td className="py-3 px-4 text-emerald-800 font-semibold text-[11px]">{p.top_intent}</td>
-                    <td className="py-3 px-4 text-rose-600 font-bold">{p.negative_sentiment_pct}%</td>
-                    <td className="py-3 px-4">
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                          p.severity === 'High'
-                            ? 'bg-rose-100 text-rose-800'
-                            : p.severity === 'Medium'
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-emerald-100 text-emerald-800'
-                        }`}
-                      >
-                        {p.severity} ({p.risk_score})
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 5: CUSTOMERS */}
-      {activeTab === 'customers' && (
-        <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
-          <div className="p-4 border-b border-slate-200">
-            <h2 className="text-sm font-bold text-slate-900">Customer Risk & Repeat Complainant Radar</h2>
-            <p className="text-xs text-slate-400">Accounts with repeated grievances, chronic escalations, or high churn risk</p>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50/90 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[10px]">
-                <tr>
-                  <th className="py-3 px-4">Customer Name</th>
-                  <th className="py-3 px-4">Email</th>
-                  <th className="py-3 px-4">Total Complaints</th>
-                  <th className="py-3 px-4">Escalations</th>
-                  <th className="py-3 px-4">Avg Urgency</th>
-                  <th className="py-3 px-4">Risk Tier</th>
-                  <th className="py-3 px-4">Last Date</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {customersData.map((c) => (
-                  <tr key={c.customer_email || c.customer_name} className="hover:bg-slate-50/60">
-                    <td className="py-3 px-4 font-bold text-slate-900">{c.customer_name}</td>
-                    <td className="py-3 px-4 font-mono text-slate-500 text-[11px]">{c.customer_email}</td>
-                    <td className="py-3 px-4 font-semibold text-slate-800">{c.total_complaints}</td>
-                    <td className="py-3 px-4 text-rose-600 font-bold">{c.escalated_count}</td>
-                    <td className="py-3 px-4 font-mono">{c.average_urgency}</td>
-                    <td className="py-3 px-4">
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                          c.risk_level === 'Critical'
-                            ? 'bg-rose-100 text-rose-800'
-                            : c.risk_level === 'High'
-                            ? 'bg-amber-100 text-amber-900'
-                            : 'bg-slate-100 text-slate-700'
-                        }`}
-                      >
-                        {c.risk_level}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-slate-400">{c.last_complaint_date}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 6: LOCATIONS */}
-      {activeTab === 'locations' && (
-        <div className="bg-white p-5 rounded-xl border border-slate-200/90 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div>
-              <h2 className="text-sm font-bold text-slate-900">Geographic Complaint Densities</h2>
-              <p className="text-xs text-slate-400">Locations extracted from NER entities across workspace tickets</p>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            {trendsData.affected_locations?.map((loc: any, idx: number) => (
-              <div key={idx} className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-slate-400 w-4">#{idx + 1}</span>
-                  <MapPin className="w-3.5 h-3.5 text-rose-500" />
-                  <span className="font-semibold text-slate-800">{loc.location}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-48 bg-slate-100 h-2 rounded-full overflow-hidden">
-                    <div
-                      className="bg-emerald-700 h-full rounded-full"
-                      style={{ width: `${Math.min(100, loc.count * 15)}%` }}
-                    />
+                    )}
                   </div>
-                  <span className="font-bold text-slate-900 w-8 text-right">{loc.count}</span>
+                  <h4 className="text-base font-bold text-slate-900 dark:text-white mb-2 leading-snug">{issue.cluster_name}</h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 mb-3">
+                    {issue.possible_root_cause || 'Recurring operational pattern identified.'}
+                  </p>
+                </div>
+
+                <div className="pt-3 border-t border-slate-100 dark:border-[#23364D] flex items-center justify-between text-xs">
+                  <span className="font-semibold text-slate-500 dark:text-slate-400">{issue.count} complaints</span>
+                  <span className="font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                    Drill down <ChevronRight className="w-4 h-4" />
+                  </span>
                 </div>
               </div>
             ))}
@@ -488,46 +339,155 @@ export const IntelligencePage: React.FC<IntelligencePageProps> = ({
         </div>
       )}
 
-      {/* Cluster Constituent Complaints Drilldown Modal */}
-      {selectedCluster && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-2xs p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] flex flex-col shadow-xl overflow-hidden">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">Cluster Drill-Down: {selectedCluster}</h3>
-                <p className="text-xs text-slate-400">{clusterComplaints.length} constituent complaints in cluster</p>
+      {/* ================= TAB 4: PRODUCTS ================= */}
+      {activeTab === 'products' && (
+        <div className="space-y-4">
+          <div className="bg-white dark:bg-[#0D1B2A] rounded-2xl border border-slate-200 dark:border-[#23364D] shadow-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-700 dark:text-slate-200">
+                <thead className="bg-slate-50 dark:bg-[#13263A] border-b border-slate-200 dark:border-[#23364D] text-xs font-bold uppercase text-slate-500 dark:text-slate-400">
+                  <tr>
+                    <th className="py-3.5 px-4">Product Name</th>
+                    <th className="py-3.5 px-4">Complaints</th>
+                    <th className="py-3.5 px-4">Defect Rate</th>
+                    <th className="py-3.5 px-4">Return Risk</th>
+                    <th className="py-3.5 px-4">Primary Failure Mode</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-[#23364D]">
+                  {productsData.map((p) => (
+                    <tr key={p.product_name} className="hover:bg-slate-50/50 dark:hover:bg-[#13263A]/50">
+                      <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">{p.product_name}</td>
+                      <td className="py-3.5 px-4">{p.complaint_count}</td>
+                      <td className="py-3.5 px-4 font-semibold text-rose-600 dark:text-rose-400">{p.defect_rate}%</td>
+                      <td className="py-3.5 px-4">
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                          p.return_risk === 'High'
+                            ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300'
+                            : p.return_risk === 'Medium'
+                            ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300'
+                            : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300'
+                        }`}>
+                          {p.return_risk} Risk
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-xs text-slate-600 dark:text-slate-300">{p.primary_complaint_category}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= TAB 5: CUSTOMERS ================= */}
+      {activeTab === 'customers' && (
+        <div className="space-y-4">
+          <div className="bg-white dark:bg-[#0D1B2A] rounded-2xl border border-slate-200 dark:border-[#23364D] shadow-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-700 dark:text-slate-200">
+                <thead className="bg-slate-50 dark:bg-[#13263A] border-b border-slate-200 dark:border-[#23364D] text-xs font-bold uppercase text-slate-500 dark:text-slate-400">
+                  <tr>
+                    <th className="py-3.5 px-4">Customer Name</th>
+                    <th className="py-3.5 px-4">Complaints</th>
+                    <th className="py-3.5 px-4">Avg Urgency</th>
+                    <th className="py-3.5 px-4">Sentiment Trajectory</th>
+                    <th className="py-3.5 px-4">Churn Risk</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-[#23364D]">
+                  {customersData.map((c) => (
+                    <tr key={c.customer_name} className="hover:bg-slate-50/50 dark:hover:bg-[#13263A]/50">
+                      <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">{c.customer_name}</td>
+                      <td className="py-3.5 px-4">{c.complaint_count}</td>
+                      <td className="py-3.5 px-4">{c.avg_urgency}/100</td>
+                      <td className="py-3.5 px-4 text-xs font-semibold capitalize text-slate-700 dark:text-slate-300">{c.sentiment_trend}</td>
+                      <td className="py-3.5 px-4">
+                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                          c.churn_risk === 'Critical' || c.churn_risk === 'High'
+                            ? 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300'
+                            : c.churn_risk === 'Medium'
+                            ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300'
+                            : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300'
+                        }`}>
+                          {c.churn_risk} Churn Risk
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ================= TAB 6: LOCATIONS ================= */}
+      {activeTab === 'locations' && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {trendsData.top_locations?.map((loc: any) => (
+              <div key={loc.location} className="bg-white dark:bg-[#0D1B2A] p-5 rounded-2xl border border-slate-200 dark:border-[#23364D] shadow-card space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-rose-500" />
+                    <h4 className="text-base font-bold text-slate-900 dark:text-white">{loc.location}</h4>
+                  </div>
+                  <span className="text-xs font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-2.5 py-0.5 rounded-full border border-blue-200 dark:border-blue-800">
+                    {loc.count} tickets
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Recurring logistics bottlenecks and delivery friction concentrated in this metro area.
+                </p>
               </div>
-              <button onClick={() => setSelectedCluster(null)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-4 h-4" />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ================= CLUSTER DRILLDOWN MODAL ================= */}
+      {selectedCluster && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/75 backdrop-blur-xs">
+          <div className="bg-white dark:bg-[#0D1B2A] rounded-2xl p-6 max-w-2xl w-full shadow-modal border border-slate-200 dark:border-[#23364D] space-y-4 max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#23364D]">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">{selectedCluster}</h3>
+                <p className="text-xs text-slate-400">Constituent complaints forming this issue cluster</p>
+              </div>
+              <button
+                onClick={() => setSelectedCluster(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-4 overflow-y-auto divide-y divide-slate-100 text-xs">
+            <div className="flex-1 overflow-y-auto space-y-3 pr-1">
               {clusterLoading ? (
-                <div className="py-8 text-center text-slate-400">Loading complaints in cluster...</div>
-              ) : clusterComplaints.length > 0 ? (
+                <div className="py-12 text-center text-xs text-slate-400">Loading cluster complaints...</div>
+              ) : clusterComplaints.length === 0 ? (
+                <div className="py-12 text-center text-xs text-slate-400">No constituent complaints found.</div>
+              ) : (
                 clusterComplaints.map((c) => (
                   <div
                     key={c.id}
                     onClick={() => {
-                      if (onSelectTicket) onSelectTicket(c.id);
                       setSelectedCluster(null);
+                      if (onSelectTicket) onSelectTicket(c.id);
                     }}
-                    className="py-3 hover:bg-slate-50 transition cursor-pointer flex items-center justify-between"
+                    className="p-3.5 rounded-xl border border-slate-200 dark:border-[#23364D] hover:border-blue-400 dark:hover:border-blue-500 bg-slate-50 dark:bg-[#13263A] transition cursor-pointer space-y-1"
                   >
-                    <div>
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="font-mono font-bold text-slate-800">{c.id}</span>
-                        <span className="text-slate-500 font-medium">{c.customer_name}</span>
-                        <span className="text-[10px] text-slate-400">{c.created_at.slice(0, 10)}</span>
-                      </div>
-                      <p className="text-slate-800 font-medium">{c.subject}</p>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-mono font-bold text-slate-900 dark:text-white">#{c.id}</span>
+                      <span className="text-slate-400">{c.customer_name}</span>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                    <p className="text-xs text-slate-700 dark:text-slate-300 font-medium line-clamp-2">
+                      {c.text}
+                    </p>
                   </div>
                 ))
-              ) : (
-                <div className="py-8 text-center text-slate-400">No constituent complaints found.</div>
               )}
             </div>
           </div>

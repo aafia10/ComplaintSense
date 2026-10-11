@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { ThemeProvider } from './context/ThemeContext';
+import { usePageTitle } from './hooks/usePageTitle';
 import { AppLayout } from './components/AppLayout';
 import { DemoModal } from './components/DemoModal';
 import { NewComplaintModal } from './components/NewComplaintModal';
@@ -12,7 +14,7 @@ import { NLPLabPage } from './pages/NLPLabPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { fetchApi, Workspace, TicketDetail } from './api/client';
 
-export const App: React.FC = () => {
+const AppContent: React.FC = () => {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
   const [currentTab, setCurrentTab] = useState<string>('landing');
@@ -21,6 +23,33 @@ export const App: React.FC = () => {
   const [isNewComplaintOpen, setIsNewComplaintOpen] = useState<boolean>(false);
   const [complaintCategoryFilter, setComplaintCategoryFilter] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState<boolean>(true);
+
+  // Dynamic Browser Tab Title
+  const getPageTitle = () => {
+    switch (currentTab) {
+      case 'landing':
+        return 'Turn customer complaints into actionable intelligence';
+      case 'overview':
+      case 'dashboard':
+        return 'Executive Overview';
+      case 'complaints':
+        return 'Complaints Workbench';
+      case 'detail':
+        return selectedTicketId ? `Complaint #${selectedTicketId}` : 'Complaint Detail';
+      case 'intelligence':
+        return 'Intelligence & Discovery';
+      case 'knowledge':
+        return 'Knowledge Base & SOPs';
+      case 'nlp':
+        return 'NLP Lab & Evaluation';
+      case 'settings':
+        return 'Settings';
+      default:
+        return 'Customer Complaint Intelligence';
+    }
+  };
+
+  usePageTitle(getPageTitle());
 
   useEffect(() => {
     loadWorkspaces();
@@ -174,6 +203,14 @@ export const App: React.FC = () => {
         />
       )}
     </>
+  );
+};
+
+export const App: React.FC = () => {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 };
 

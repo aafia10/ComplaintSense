@@ -10,7 +10,8 @@ import {
   ShieldAlert,
   ArrowRight,
   CheckCircle2,
-  X
+  X,
+  FileCheck
 } from 'lucide-react';
 import { fetchApi, Workspace, KnowledgeGapItem } from '../api/client';
 
@@ -59,24 +60,24 @@ export const KnowledgeBasePage: React.FC<KnowledgeBasePageProps> = ({
     }
   };
 
-  const handleCreateDocument = async (e: React.FormEvent) => {
+  const handleSaveDoc = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTitle.trim() || !newContent.trim()) return;
+    if (!newTitle.trim() || !newContent.trim()) {
+      alert('Title and content are required.');
+      return;
+    }
 
     try {
       setUploading(true);
-      const formData = new FormData();
-      formData.append('workspace_id', activeWorkspace.id);
-      formData.append('title', newTitle.trim());
-      formData.append('category', newCategory);
-      formData.append('content_text', newContent.trim());
-
-      const res = await fetch(`http://localhost:8000/api/knowledge`, {
+      await fetchApi('/knowledge', {
         method: 'POST',
-        body: formData,
+        body: JSON.stringify({
+          workspace_id: activeWorkspace.id,
+          title: newTitle,
+          category: newCategory,
+          content: newContent,
+        }),
       });
-
-      if (!res.ok) throw new Error('Failed to create document');
       setIsAddOpen(false);
       setNewTitle('');
       setNewContent('');
@@ -85,16 +86,6 @@ export const KnowledgeBasePage: React.FC<KnowledgeBasePageProps> = ({
       alert(err.message || 'Failed to save document');
     } finally {
       setUploading(false);
-    }
-  };
-
-  const handleDeleteDocument = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this custom policy?')) return;
-    try {
-      await fetchApi(`/knowledge/${id}`, { method: 'DELETE' });
-      await loadKnowledgeData();
-    } catch (err: any) {
-      alert(err.message || 'Failed to delete document');
     }
   };
 
@@ -120,20 +111,20 @@ export const KnowledgeBasePage: React.FC<KnowledgeBasePageProps> = ({
     : docs;
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-[#23364D]">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
-              Knowledge Base & SOP Policies
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              Knowledge Base & SOPs
             </h1>
-            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/50">
-              100% Local Text Retrieval
+            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+              Local Policy Grounding
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Internal guidelines and standard operating procedures used by the response assistant to ground customer drafts.
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Internal operating procedures and policies used by the Response Assistant to ground generated resolution drafts.
           </p>
         </div>
 
@@ -143,7 +134,7 @@ export const KnowledgeBasePage: React.FC<KnowledgeBasePageProps> = ({
             setNewContent('');
             setIsAddOpen(true);
           }}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0F2A5F] hover:bg-[#163A7A] dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-sm font-semibold shadow-subtle transition cursor-pointer min-h-[44px]"
         >
           <Plus className="w-4 h-4" />
           <span>Add Policy SOP</span>
@@ -152,55 +143,57 @@ export const KnowledgeBasePage: React.FC<KnowledgeBasePageProps> = ({
 
       {/* KNOWLEDGE GAP DETECTION BANNER / SECTION */}
       {gaps.length > 0 && (
-        <div className="bg-amber-50/60 border border-amber-300/80 rounded-xl p-5 shadow-2xs space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-amber-500 text-white flex items-center justify-center">
-                <AlertTriangle className="w-4 h-4" />
+        <div className="bg-amber-50/70 dark:bg-amber-950/40 border-2 border-amber-300 dark:border-amber-600/50 rounded-2xl p-5 sm:p-6 shadow-card space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-xs font-bold uppercase tracking-wider text-amber-900">
-                  Knowledge Gap Detection ({gaps.length} Found)
+                <h2 className="text-base font-bold text-amber-900 dark:text-amber-200">
+                  Detected Knowledge Gaps ({gaps.length} Found)
                 </h2>
-                <p className="text-[11px] text-slate-600">
-                  Customer complaint clusters that lack corresponding internal policy guidelines
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300">
+                  Recurring complaint clusters that lack corresponding internal SOP documentation
                 </p>
               </div>
             </div>
-            <span className="text-[10px] font-semibold text-amber-900 bg-amber-200/60 px-2 py-0.5 rounded">
-              High Priority SOP Recommendations
+            <span className="self-start sm:self-auto text-xs font-bold text-amber-900 dark:text-amber-300 bg-amber-200/80 dark:bg-amber-900/60 px-3 py-1 rounded-full">
+              SOP Action Required
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
             {gaps.map((gap) => (
               <div
                 key={gap.cluster_id}
-                className="bg-white p-4 rounded-lg border border-amber-200 shadow-2xs space-y-2 flex flex-col justify-between"
+                className="bg-white dark:bg-[#0D1B2A] p-5 rounded-xl border border-amber-200 dark:border-[#23364D] shadow-subtle space-y-3 flex flex-col justify-between"
               >
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-slate-900 text-xs">{gap.cluster_title}</span>
-                    <span className="text-[10px] font-bold uppercase px-1.5 py-0.2 rounded bg-rose-100 text-rose-800">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-bold text-slate-900 dark:text-white text-sm">{gap.cluster_title}</span>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300">
                       {gap.complaint_count} complaints
                     </span>
                   </div>
-                  <p className="text-xs text-slate-600 line-clamp-2">{gap.actionable_guidance}</p>
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Closest existing policy: <span className="font-medium text-slate-700">{gap.closest_policy}</span>{' '}
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed">
+                    {gap.actionable_guidance}
+                  </p>
+                  <p className="text-xs text-slate-400 dark:text-slate-400 mt-2">
+                    Closest existing policy: <span className="font-semibold text-slate-700 dark:text-slate-200">{gap.closest_policy}</span>{' '}
                     (Match: {Math.round(gap.max_kb_similarity * 100)}%)
                   </p>
                 </div>
 
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[11px] font-medium text-emerald-800">
-                    Suggested SOP: {gap.suggested_policy_title}
+                <div className="pt-3 border-t border-slate-100 dark:border-[#23364D] flex items-center justify-between">
+                  <span className="text-xs font-semibold text-blue-700 dark:text-blue-400 truncate max-w-[200px]">
+                    SOP: {gap.suggested_policy_title}
                   </span>
                   <button
                     onClick={() => handleDraftFromGap(gap)}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-900 cursor-pointer"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200 cursor-pointer min-h-[38px] px-2.5 py-1 rounded-lg hover:bg-blue-50 dark:hover:bg-[#13263A]"
                   >
-                    <span>Draft Policy</span>
+                    <span>Draft SOP</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -210,56 +203,47 @@ export const KnowledgeBasePage: React.FC<KnowledgeBasePageProps> = ({
         </div>
       )}
 
-      {/* Search Input */}
+      {/* Touch-Friendly Search Input */}
       <div className="relative">
-        <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+        <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
         <input
           type="text"
           placeholder="Search policy documentation using TF-IDF cosine semantic similarity..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-slate-200 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-600"
+          className="w-full pl-12 pr-4 py-3 text-sm rounded-xl border border-slate-200 dark:border-[#23364D] bg-white dark:bg-[#0D1B2A] text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 min-h-[46px] shadow-subtle"
         />
       </div>
 
       {/* 2-Column Document Browser */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Document List (4 cols) */}
-        <div className="lg:col-span-4 bg-white p-4 rounded-xl border border-slate-200/90 shadow-2xs space-y-2">
-          <div className="text-[11px] font-bold uppercase text-slate-400 px-2 py-1 flex items-center justify-between">
+        <div className="lg:col-span-4 bg-white dark:bg-[#0D1B2A] p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-[#23364D] shadow-card space-y-2">
+          <div className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400 px-2 py-1 flex items-center justify-between">
             <span>Documents ({filteredDocs.length})</span>
-            <span className="text-[10px] text-emerald-700 font-semibold">Local TXT</span>
+            <span className="text-xs text-blue-600 dark:text-blue-400 font-bold">Local TXT</span>
           </div>
 
-          <div className="space-y-1 max-h-[500px] overflow-y-auto">
+          <div className="space-y-1.5 max-h-[500px] overflow-y-auto">
             {filteredDocs.map((doc) => {
               const isSelected = selectedDoc?.filename === doc.filename;
               return (
                 <div
                   key={doc.filename}
                   onClick={() => setSelectedDoc(doc)}
-                  className={`p-3 rounded-lg cursor-pointer transition text-xs flex items-center justify-between ${
+                  className={`p-3.5 rounded-xl cursor-pointer transition text-sm flex items-center justify-between min-h-[44px] ${
                     isSelected
-                      ? 'bg-emerald-50 border border-emerald-200/70 text-emerald-900 font-bold'
-                      : 'hover:bg-slate-50 text-slate-700'
+                      ? 'bg-blue-50 dark:bg-[#13263A] border border-blue-200 dark:border-blue-500/40 text-blue-900 dark:text-blue-300 font-bold'
+                      : 'hover:bg-slate-50 dark:hover:bg-[#13263A]/60 text-slate-700 dark:text-slate-300'
                   }`}
                 >
-                  <div className="flex items-center gap-2 truncate pr-2">
-                    <FileText className={`w-4 h-4 shrink-0 ${isSelected ? 'text-emerald-700' : 'text-slate-400'}`} />
+                  <div className="flex items-center gap-2.5 truncate pr-2">
+                    <FileText className={`w-4 h-4 shrink-0 ${isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
                     <span className="truncate">{doc.title}</span>
                   </div>
-                  {doc.is_custom && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteDocument(doc.id);
-                      }}
-                      className="text-slate-400 hover:text-rose-600 p-1 cursor-pointer"
-                      title="Delete custom policy"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                  <span className="text-[11px] text-slate-400 uppercase font-mono shrink-0">
+                    {doc.category?.substring(0, 10)}
+                  </span>
                 </div>
               );
             })}
@@ -267,91 +251,104 @@ export const KnowledgeBasePage: React.FC<KnowledgeBasePageProps> = ({
         </div>
 
         {/* Document Viewer (8 cols) */}
-        <div className="lg:col-span-8 bg-white p-6 rounded-xl border border-slate-200/90 shadow-2xs space-y-4">
+        <div className="lg:col-span-8 bg-white dark:bg-[#0D1B2A] p-6 sm:p-7 rounded-2xl border border-slate-200 dark:border-[#23364D] shadow-card min-h-[500px] flex flex-col justify-between">
           {selectedDoc ? (
-            <div>
-              <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-100 dark:border-[#23364D]">
                 <div>
-                  <h2 className="text-base font-bold text-slate-900">{selectedDoc.title}</h2>
-                  <span className="text-xs text-slate-400 font-mono">{selectedDoc.filename}</span>
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">{selectedDoc.title}</h2>
+                  <div className="flex items-center gap-3 text-xs text-slate-400 mt-1">
+                    <span>Category: {selectedDoc.category}</span>
+                    <span>•</span>
+                    <span className="font-mono">{selectedDoc.filename}</span>
+                  </div>
                 </div>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
-                  {selectedDoc.category || 'Policy Document'}
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                  Indexed & Active
                 </span>
               </div>
 
-              <div className="mt-4 p-4 rounded-lg bg-slate-50 border border-slate-200 font-mono text-xs text-slate-800 leading-relaxed whitespace-pre-wrap max-h-[460px] overflow-y-auto">
+              {/* Policy Body */}
+              <div className="p-5 rounded-xl bg-slate-50 dark:bg-[#13263A] border border-slate-100 dark:border-[#23364D] text-slate-800 dark:text-slate-200 text-sm leading-relaxed whitespace-pre-wrap font-sans max-h-[420px] overflow-y-auto">
                 {selectedDoc.content}
               </div>
             </div>
           ) : (
-            <div className="p-16 text-center text-xs text-slate-400">
-              Select a document from the left to read its full policy terms.
-            </div>
+            <div className="py-24 text-center text-slate-400 text-sm">Select a document to inspect full policy text.</div>
           )}
+
+          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-[#23364D] flex items-center justify-between text-xs text-slate-400">
+            <span>TF-IDF indexing ensures instant offline search retrieval.</span>
+            <span>Local file: {selectedDoc?.filename}</span>
+          </div>
         </div>
       </div>
 
-      {/* Add Document Modal */}
+      {/* ================= ADD POLICY MODAL ================= */}
       {isAddOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-2xs p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-lg w-full shadow-xl space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <h3 className="text-sm font-bold text-slate-900">Add Standard Operating Procedure (SOP)</h3>
-              <button onClick={() => setIsAddOpen(false)} className="text-slate-400 hover:text-slate-600">
-                <X className="w-4 h-4" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 dark:bg-black/75 backdrop-blur-xs">
+          <div className="bg-white dark:bg-[#0D1B2A] rounded-2xl p-6 max-w-lg w-full shadow-modal border border-slate-200 dark:border-[#23364D] space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-[#23364D]">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Add Internal Policy SOP</h3>
+              <button onClick={() => setIsAddOpen(false)} className="p-1 text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateDocument} className="space-y-3 text-xs">
+            <form onSubmit={handleSaveDoc} className="space-y-3.5 text-sm">
               <div>
-                <label className="block text-slate-700 font-semibold mb-1">Document Title</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase block mb-1">Policy Title</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Standard Operating Procedure: Delayed Shipments"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs"
+                  placeholder="e.g. Expedited Refund & Transit Guarantee"
+                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-[#23364D] bg-slate-50 dark:bg-[#13263A] text-slate-900 dark:text-white text-sm min-h-[44px]"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-700 font-semibold mb-1">Category</label>
-                <input
-                  type="text"
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase block mb-1">Category</label>
+                <select
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs"
-                />
+                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-[#23364D] bg-slate-50 dark:bg-[#13263A] text-slate-900 dark:text-white text-sm min-h-[44px]"
+                >
+                  <option value="Standard Operating Procedure">Standard Operating Procedure</option>
+                  <option value="Refund & Return Policy">Refund & Return Policy</option>
+                  <option value="Service Level Agreement">Service Level Agreement</option>
+                  <option value="Technical Troubleshooting">Technical Troubleshooting</option>
+                  <option value="Account Security Protocol">Account Security Protocol</option>
+                </select>
               </div>
 
               <div>
-                <label className="block text-slate-700 font-semibold mb-1">Policy Content (TXT format)</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase block mb-1">Policy Content (Markdown / Plain Text)</label>
                 <textarea
+                  rows={6}
                   required
-                  rows={8}
-                  placeholder="Specify handling guidelines, compensation rules, and response turnaround..."
                   value={newContent}
                   onChange={(e) => setNewContent(e.target.value)}
-                  className="w-full p-3 border border-slate-200 rounded-lg text-xs font-mono"
+                  placeholder="Document SLA targets, escalation thresholds, and communication directives..."
+                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-[#23364D] bg-slate-50 dark:bg-[#13263A] text-slate-900 dark:text-white text-sm"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex gap-2.5 justify-end pt-2">
                 <button
                   type="button"
                   onClick={() => setIsAddOpen(false)}
-                  className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600"
+                  className="px-4 py-2.5 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 rounded-xl"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={uploading}
-                  className="px-4 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold shadow-xs"
+                  className="px-5 py-2.5 text-sm font-bold bg-[#0F2A5F] hover:bg-[#163A7A] dark:bg-blue-600 dark:hover:bg-blue-500 text-white rounded-xl shadow-subtle cursor-pointer min-h-[44px]"
                 >
-                  {uploading ? 'Saving...' : 'Save Policy'}
+                  {uploading ? 'Indexing...' : 'Save & Index Document'}
                 </button>
               </div>
             </form>

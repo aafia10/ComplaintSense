@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { Workspace } from '../api/client';
@@ -26,9 +26,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenNewComplaint,
   onResetDemo,
 }) => {
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
   return (
-    <div className="flex h-screen bg-slate-50 font-sans overflow-hidden text-slate-800">
-      {/* Fixed Left Sidebar */}
+    <div className="flex h-screen bg-slate-50 dark:bg-[#07111F] font-sans overflow-hidden text-slate-800 dark:text-slate-100 transition-colors">
+      {/* Sidebar (Desktop Persistent + Mobile Drawer) */}
       <Sidebar
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
@@ -36,6 +38,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         workspaces={workspaces}
         onSelectWorkspace={onSelectWorkspace}
         onOpenDemoModal={onOpenDemoModal}
+        isMobileOpen={isMobileSidebarOpen}
+        onMobileClose={() => setIsMobileSidebarOpen(false)}
       />
 
       {/* Main Content Pane */}
@@ -46,10 +50,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           activeWorkspace={activeWorkspace}
           onOpenNewComplaint={onOpenNewComplaint}
           onResetDemo={onResetDemo}
+          onOpenMobileMenu={() => setIsMobileSidebarOpen(true)}
         />
 
         {/* Scrollable Page Body */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-50 dark:bg-[#07111F]">
           {children}
         </main>
       </div>

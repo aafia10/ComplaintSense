@@ -11,7 +11,12 @@ import {
   AlertCircle,
   HelpCircle,
   CheckCircle2,
-  ExternalLink
+  ExternalLink,
+  X,
+  SlidersHorizontal,
+  Clock,
+  User,
+  Tag
 } from 'lucide-react';
 import { fetchApi, TicketListItem, Workspace } from '../api/client';
 import { CsvImportModal } from '../components/CsvImportModal';
@@ -45,8 +50,9 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
   const [departmentFilter, setDepartmentFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Bulk import modal state
+  // Modals
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   useEffect(() => {
     loadTickets();
@@ -98,33 +104,52 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
     window.open(`http://localhost:8000/api/data/export-csv?${params.toString()}`, '_blank');
   };
 
+  const clearAllFilters = () => {
+    setCategoryFilter('');
+    setIntentFilter('');
+    setSentimentFilter('');
+    setUrgencyFilter('');
+    setStatusFilter('');
+    setDepartmentFilter('');
+    setSearchQuery('');
+  };
+
+  const activeFilterCount = [
+    categoryFilter,
+    intentFilter,
+    sentimentFilter,
+    urgencyFilter,
+    statusFilter,
+    departmentFilter,
+  ].filter(Boolean).length;
+
   const getUrgencyBadge = (urgency?: string, score?: number) => {
     const u = (urgency || '').toLowerCase();
     switch (u) {
       case 'critical':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-rose-100 text-rose-800">
-            <span className="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
-            Critical {score ? `(${score})` : ''}
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+            <span className="w-2 h-2 rounded-full bg-rose-600 dark:bg-rose-400"></span>
+            Critical {score !== undefined ? `(${score})` : ''}
           </span>
         );
       case 'high':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-900">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
-            High {score ? `(${score})` : ''}
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+            <span className="w-2 h-2 rounded-full bg-amber-600 dark:bg-amber-400"></span>
+            High {score !== undefined ? `(${score})` : ''}
           </span>
         );
       case 'medium':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700">
-            Medium {score ? `(${score})` : ''}
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-[#13263A] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#23364D]">
+            Medium {score !== undefined ? `(${score})` : ''}
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-800">
-            Low {score ? `(${score})` : ''}
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+            Low {score !== undefined ? `(${score})` : ''}
           </span>
         );
     }
@@ -133,138 +158,207 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
       case 'resolved':
-        return <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">Resolved</span>;
+        return (
+          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+            Resolved
+          </span>
+        );
       case 'escalated':
-        return <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200/60">Escalated</span>;
+        return (
+          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+            Escalated
+          </span>
+        );
       case 'in_progress':
       case 'in review':
       case 'in_review':
-        return <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-sky-50 text-sky-700 border border-sky-200/60">In Review</span>;
+        return (
+          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+            In Review
+          </span>
+        );
       default:
-        return <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700">Open</span>;
+        return (
+          <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-[#13263A] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-[#23364D]">
+            Open
+          </span>
+        );
     }
   };
 
+  const getSentimentPill = (sentiment?: string) => {
+    const s = (sentiment || '').toLowerCase();
+    if (s.includes('neg') || s === 'frustrated' || s === 'angry' || s === 'threatening') {
+      return (
+        <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded border border-rose-200/60 dark:border-rose-800">
+          Negative
+        </span>
+      );
+    }
+    if (s.includes('pos') || s === 'satisfied') {
+      return (
+        <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200/60 dark:border-emerald-800">
+          Positive
+        </span>
+      );
+    }
+    return (
+      <span className="text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-[#13263A] px-2 py-0.5 rounded border border-slate-200 dark:border-[#23364D]">
+        Neutral
+      </span>
+    );
+  };
+
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
       {/* Top Header & Bulk Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-[#23364D]">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">Customer Complaints</h1>
-            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-              {tickets.length} total
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              Complaints Workbench
+            </h1>
+            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+              {tickets.length} complaints
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-0.5">
-            NLP-indexed complaint repository with multi-field search, sentiment, and urgency classification.
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            NLP-classified grievance repository with deep topic, intent, and root-cause intelligence.
           </p>
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 sm:gap-2.5">
           {/* CSV Export */}
           <button
             onClick={handleExportCsv}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-2xs transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-[#23364D] bg-white dark:bg-[#0D1B2A] hover:bg-slate-50 dark:hover:bg-[#13263A] text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 shadow-subtle transition cursor-pointer min-h-[42px]"
             title="Export filtered complaints to CSV"
           >
-            <Download className="w-3.5 h-3.5 text-slate-500" />
-            <span>Export CSV</span>
+            <Download className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+            <span className="hidden sm:inline">Export CSV</span>
           </button>
 
           {/* Bulk CSV Import */}
           <button
             onClick={() => setIsImportModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 shadow-2xs transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-[#23364D] bg-white dark:bg-[#0D1B2A] hover:bg-slate-50 dark:hover:bg-[#13263A] text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 shadow-subtle transition cursor-pointer min-h-[42px]"
             title="Import complaints from CSV"
           >
-            <Upload className="w-3.5 h-3.5 text-slate-500" />
-            <span>Import CSV</span>
+            <Upload className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+            <span className="hidden sm:inline">Import CSV</span>
+          </button>
+
+          {/* New Complaint Button */}
+          <button
+            onClick={onOpenNewComplaint}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0F2A5F] hover:bg-[#163A7A] dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-xs sm:text-sm font-semibold shadow-subtle transition cursor-pointer min-h-[42px]"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Complaint</span>
           </button>
 
           {/* Refresh List */}
           <button
             onClick={() => loadTickets()}
-            className="p-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 transition cursor-pointer"
+            className="p-2.5 rounded-xl border border-slate-200 dark:border-[#23364D] bg-white dark:bg-[#0D1B2A] hover:bg-slate-50 dark:hover:bg-[#13263A] text-slate-500 dark:text-slate-400 transition cursor-pointer min-h-[42px] min-w-[42px] flex items-center justify-center"
             title="Refresh complaints"
+            aria-label="Refresh complaints"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
+            <RefreshCw className="w-4 h-4" />
           </button>
         </div>
       </div>
 
       {/* Tabs: All Complaints vs Needs Review (Low-confidence queue) */}
-      <div className="flex items-center gap-3 border-b border-slate-200">
+      <div className="flex items-center gap-4 border-b border-slate-200 dark:border-[#23364D]">
         <button
           onClick={() => setActiveTab('all')}
-          className={`pb-2.5 text-xs font-semibold border-b-2 transition-all cursor-pointer ${
+          className={`pb-3 text-sm font-bold border-b-2 transition-all cursor-pointer min-h-[44px] ${
             activeTab === 'all'
-              ? 'border-emerald-700 text-emerald-800'
-              : 'border-transparent text-slate-500 hover:text-slate-900'
+              ? 'border-[#0F2A5F] dark:border-blue-400 text-[#0F2A5F] dark:text-blue-400'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
           All Complaints
         </button>
         <button
           onClick={() => setActiveTab('needs_review')}
-          className={`pb-2.5 text-xs font-semibold border-b-2 transition-all flex items-center gap-1.5 cursor-pointer ${
+          className={`pb-3 text-sm font-bold border-b-2 transition-all flex items-center gap-2 cursor-pointer min-h-[44px] ${
             activeTab === 'needs_review'
-              ? 'border-emerald-700 text-emerald-800'
-              : 'border-transparent text-slate-500 hover:text-slate-900'
+              ? 'border-[#0F2A5F] dark:border-blue-400 text-[#0F2A5F] dark:text-blue-400'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          <HelpCircle className="w-3.5 h-3.5 text-amber-500" />
-          <span>Needs Review (Confidence &lt; 60%)</span>
+          <HelpCircle className="w-4 h-4 text-amber-500" />
+          <span>Needs Review (Confidence &lt; 65%)</span>
         </button>
       </div>
 
-      {/* Search & Filter Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200/90 shadow-2xs space-y-3">
-        {/* Search */}
-        <form onSubmit={handleSearchSubmit} className="flex gap-2">
+      {/* Search Bar + Mobile Filter Trigger / Desktop Filter Row */}
+      <div className="bg-white dark:bg-[#0D1B2A] p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-[#23364D] shadow-card space-y-4">
+        {/* Search Input Row */}
+        <form onSubmit={handleSearchSubmit} className="flex gap-2 sm:gap-3">
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <Search className="w-5 h-5 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search by customer, subject, complaint ID, product name, or keyword..."
+              placeholder="Search by customer, complaint ID, keyword, product, or location..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600 bg-slate-50/50"
+              className="w-full pl-11 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-[#23364D] focus:outline-none focus:ring-2 focus:ring-blue-600 bg-slate-50/70 dark:bg-[#13263A] text-slate-900 dark:text-white min-h-[44px]"
             />
           </div>
           <button
             type="submit"
-            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition cursor-pointer"
+            className="px-5 py-2.5 bg-[#0F2A5F] hover:bg-[#163A7A] dark:bg-blue-600 dark:hover:bg-blue-500 text-white text-sm font-semibold rounded-xl transition cursor-pointer min-h-[44px]"
           >
             Search
           </button>
+          {/* Mobile Filter Button */}
+          <button
+            type="button"
+            onClick={() => setIsMobileFilterOpen(true)}
+            className="md:hidden px-3.5 py-2.5 bg-slate-100 dark:bg-[#13263A] border border-slate-200 dark:border-[#23364D] text-slate-700 dark:text-slate-200 text-sm font-semibold rounded-xl flex items-center gap-1.5 cursor-pointer min-h-[44px]"
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            <span>Filters</span>
+            {activeFilterCount > 0 && (
+              <span className="w-5 h-5 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center font-bold">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
         </form>
 
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 text-xs">
-          <div className="flex items-center gap-1 text-slate-400 font-medium mr-1">
-            <Filter className="w-3.5 h-3.5" />
-            <span className="text-[11px] uppercase tracking-wider font-semibold">Filter:</span>
+        {/* Desktop Filters Bar (hidden on mobile, visible on md+) */}
+        <div className="hidden md:flex flex-wrap items-center gap-3 pt-3 border-t border-slate-100 dark:border-[#23364D] text-sm">
+          <div className="flex items-center gap-1.5 text-slate-400 font-semibold mr-1">
+            <Filter className="w-4 h-4" />
+            <span className="text-xs uppercase tracking-wider">Filters:</span>
           </div>
 
-          {/* Category */}
+          {/* Category Filter */}
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="px-2.5 py-1.5 rounded-md border border-slate-200 bg-white font-medium text-slate-700 text-xs focus:outline-none cursor-pointer"
+            className="bg-slate-50 dark:bg-[#13263A] border border-slate-200 dark:border-[#23364D] text-slate-700 dark:text-slate-200 text-xs sm:text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-600 cursor-pointer min-h-[38px]"
           >
-            <option value="">All Topics</option>
-            {activeWorkspace.categories.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
+            <option value="">All Categories</option>
+            <option value="Delivery & Logistics">Delivery & Logistics</option>
+            <option value="Billing & Refund">Billing & Refund</option>
+            <option value="Product Defect">Product Defect</option>
+            <option value="Technical Support">Technical Support</option>
+            <option value="Account & Login">Account & Login</option>
+            <option value="Customer Service">Customer Service</option>
+            <option value="Contract & Legal">Contract & Legal</option>
           </select>
 
-          {/* Intent */}
+          {/* Intent Filter */}
           <select
             value={intentFilter}
             onChange={(e) => setIntentFilter(e.target.value)}
-            className="px-2.5 py-1.5 rounded-md border border-slate-200 bg-white font-medium text-slate-700 text-xs focus:outline-none cursor-pointer"
+            className="bg-slate-50 dark:bg-[#13263A] border border-slate-200 dark:border-[#23364D] text-slate-700 dark:text-slate-200 text-xs sm:text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-600 cursor-pointer min-h-[38px]"
           >
             <option value="">All Intents</option>
             <option value="Request Refund">Request Refund</option>
@@ -273,155 +367,340 @@ export const ComplaintsPage: React.FC<ComplaintsPageProps> = ({
             <option value="Cancel Order">Cancel Order</option>
             <option value="Report Payment Problem">Report Payment Problem</option>
             <option value="Report Technical Problem">Report Technical Problem</option>
-            <option value="Report Problem">Report Problem</option>
-            <option value="Escalate Complaint">Escalate Complaint</option>
-            <option value="Ask Question">Ask Question</option>
           </select>
 
-          {/* Urgency */}
+          {/* Urgency Filter */}
           <select
             value={urgencyFilter}
             onChange={(e) => setUrgencyFilter(e.target.value)}
-            className="px-2.5 py-1.5 rounded-md border border-slate-200 bg-white font-medium text-slate-700 text-xs focus:outline-none cursor-pointer"
+            className="bg-slate-50 dark:bg-[#13263A] border border-slate-200 dark:border-[#23364D] text-slate-700 dark:text-slate-200 text-xs sm:text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-600 cursor-pointer min-h-[38px]"
           >
             <option value="">All Urgencies</option>
-            <option value="critical">Critical</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
+            <option value="Critical">Critical</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
           </select>
 
-          {/* Status */}
+          {/* Sentiment Filter */}
+          <select
+            value={sentimentFilter}
+            onChange={(e) => setSentimentFilter(e.target.value)}
+            className="bg-slate-50 dark:bg-[#13263A] border border-slate-200 dark:border-[#23364D] text-slate-700 dark:text-slate-200 text-xs sm:text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-600 cursor-pointer min-h-[38px]"
+          >
+            <option value="">All Sentiments</option>
+            <option value="Negative">Negative</option>
+            <option value="Neutral">Neutral</option>
+            <option value="Positive">Positive</option>
+          </select>
+
+          {/* Status Filter */}
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-2.5 py-1.5 rounded-md border border-slate-200 bg-white font-medium text-slate-700 text-xs focus:outline-none cursor-pointer"
+            className="bg-slate-50 dark:bg-[#13263A] border border-slate-200 dark:border-[#23364D] text-slate-700 dark:text-slate-200 text-xs sm:text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-600 cursor-pointer min-h-[38px]"
           >
             <option value="">All Statuses</option>
             <option value="open">Open</option>
-            <option value="in_progress">In Review</option>
+            <option value="in_review">In Review</option>
             <option value="escalated">Escalated</option>
             <option value="resolved">Resolved</option>
           </select>
 
-          {/* Clear filters */}
-          {(categoryFilter || intentFilter || sentimentFilter || urgencyFilter || statusFilter || departmentFilter || searchQuery) && (
+          {/* Clear Filters */}
+          {activeFilterCount > 0 && (
             <button
-              onClick={() => {
-                setCategoryFilter('');
-                setIntentFilter('');
-                setSentimentFilter('');
-                setUrgencyFilter('');
-                setStatusFilter('');
-                setDepartmentFilter('');
-                setSearchQuery('');
-              }}
-              className="text-xs text-rose-600 hover:text-rose-800 font-medium ml-auto cursor-pointer"
+              onClick={clearAllFilters}
+              className="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline cursor-pointer ml-auto"
             >
-              Clear filters
+              Clear filters ({activeFilterCount})
             </button>
           )}
         </div>
       </div>
 
-      {/* 8-Column Standardized Table */}
-      <div className="bg-white rounded-xl border border-slate-200/90 shadow-2xs overflow-hidden">
-        {loading ? (
-          <div className="p-12 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-            <div className="w-4 h-4 border-2 border-emerald-700 border-t-transparent rounded-full animate-spin"></div>
-            Loading complaints...
+      {/* COMPLAINTS CONTENT: DESKTOP TABLE vs MOBILE STACKED CARDS */}
+      {loading ? (
+        <div className="p-12 bg-white dark:bg-[#0D1B2A] rounded-2xl border border-slate-200 dark:border-[#23364D] flex flex-col items-center justify-center min-h-[300px]">
+          <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-3">Loading complaint records...</p>
+        </div>
+      ) : tickets.length === 0 ? (
+        <div className="p-12 bg-white dark:bg-[#0D1B2A] rounded-2xl border border-slate-200 dark:border-[#23364D] text-center space-y-4">
+          <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-[#13263A] flex items-center justify-center mx-auto text-slate-400">
+            <Search className="w-6 h-6" />
           </div>
-        ) : error ? (
-          <div className="p-8 text-center text-xs text-rose-600">{error}</div>
-        ) : tickets.length === 0 ? (
-          <div className="p-16 text-center">
-            <Layers className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-            <div className="text-sm font-bold text-slate-700">No complaints found</div>
-            <p className="text-xs text-slate-400 mt-1">Try adjusting your search query or active filter settings.</p>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white">No complaints found</h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+            No complaints match the current filter or search criteria. Try modifying your filters or searching for different terms.
+          </p>
+          {activeFilterCount > 0 && (
+            <button
+              onClick={clearAllFilters}
+              className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition cursor-pointer"
+            >
+              Clear All Filters
+            </button>
+          )}
+        </div>
+      ) : (
+        <>
+          {/* 1. MOBILE RESPONSIVE CARDS (Visible on < 768px) */}
+          <div className="md:hidden space-y-4">
+            {tickets.map((t) => (
+              <div
+                key={t.id}
+                onClick={() => onSelectTicket(t.id)}
+                className="bg-white dark:bg-[#0D1B2A] p-4 rounded-2xl border border-slate-200 dark:border-[#23364D] shadow-card hover:border-blue-400 dark:hover:border-blue-500 transition cursor-pointer space-y-3"
+              >
+                {/* Card Top: ID + Status + Urgency */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-[#13263A] px-2.5 py-1 rounded-md">
+                      #{t.id}
+                    </span>
+                    {getStatusBadge(t.status)}
+                  </div>
+                  {getUrgencyBadge(t.urgency_level, t.urgency_score)}
+                </div>
+
+                {/* Subject & Complaint Snippet */}
+                <div>
+                  <h4 className="text-base font-bold text-slate-900 dark:text-white line-clamp-1">{t.subject}</h4>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 line-clamp-2 leading-relaxed">
+                    {t.text}
+                  </p>
+                </div>
+
+                {/* Tags & Metadata */}
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-[#23364D] text-xs">
+                  <span className="font-semibold text-blue-900 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded border border-blue-200/60 dark:border-blue-800">
+                    {t.category || 'General'}
+                  </span>
+                  {t.intent && (
+                    <span className="font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-[#13263A] px-2 py-0.5 rounded">
+                      Intent: {t.intent}
+                    </span>
+                  )}
+                  {getSentimentPill(t.sentiment)}
+                </div>
+
+                {/* Card Footer: Customer & Action Target */}
+                <div className="flex items-center justify-between pt-1 text-xs text-slate-500 dark:text-slate-400">
+                  <div className="flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5" />
+                    <span className="font-medium truncate max-w-[140px]">{t.customer_name || 'Customer'}</span>
+                  </div>
+                  <span className="font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-0.5 min-h-[44px] flex items-center">
+                    View Complaint <ChevronRight className="w-4 h-4" />
+                  </span>
+                </div>
+              </div>
+            ))}
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-slate-50/90 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
-                  <th className="py-3 px-4">ID</th>
-                  <th className="py-3 px-4">Customer</th>
-                  <th className="py-3 px-4">Subject / Summary</th>
-                  <th className="py-3 px-4">Topic</th>
-                  <th className="py-3 px-4">Intent</th>
-                  <th className="py-3 px-4">Urgency</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {tickets.map((t) => (
-                  <tr
-                    key={t.id}
-                    onClick={() => onSelectTicket(t.id)}
-                    className="hover:bg-emerald-50/30 cursor-pointer transition-colors group"
-                  >
-                    {/* 1. ID */}
-                    <td className="py-3 px-4 font-mono font-bold text-slate-900 whitespace-nowrap">
-                      {t.id}
-                    </td>
 
-                    {/* 2. Customer */}
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <div className="font-semibold text-slate-900">{t.customer_name}</div>
-                      <div className="text-[10px] text-slate-400">{t.customer_email}</div>
-                    </td>
-
-                    {/* 3. Subject / Summary */}
-                    <td className="py-3 px-4 text-slate-800 font-medium max-w-xs truncate" title={t.subject}>
-                      {t.subject}
-                    </td>
-
-                    {/* 4. Topic */}
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <span className="font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded text-[11px]">
-                        {t.category || 'General'}
-                      </span>
-                    </td>
-
-                    {/* 5. Intent */}
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <span className="font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded text-[11px] border border-emerald-200/50">
-                        {t.intent || 'Report Problem'}
-                      </span>
-                    </td>
-
-                    {/* 6. Urgency */}
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      {getUrgencyBadge(t.urgency_level, t.urgency_score)}
-                    </td>
-
-                    {/* 7. Status */}
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      {getStatusBadge(t.status)}
-                    </td>
-
-                    {/* 8. Actions */}
-                    <td className="py-3 px-4 text-right whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 group-hover:text-emerald-900 transition-colors">
-                        <span>Review</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </span>
-                    </td>
+          {/* 2. DESKTOP 8-COLUMN DATA TABLE (Visible on >= 768px) */}
+          <div className="hidden md:block bg-white dark:bg-[#0D1B2A] rounded-2xl border border-slate-200 dark:border-[#23364D] shadow-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-700 dark:text-slate-200 border-collapse">
+                <thead className="bg-slate-50 dark:bg-[#13263A] border-b border-slate-200 dark:border-[#23364D] text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  <tr>
+                    <th className="py-3.5 px-4">Ticket</th>
+                    <th className="py-3.5 px-4">Customer</th>
+                    <th className="py-3.5 px-4">Issue Topic</th>
+                    <th className="py-3.5 px-4">Customer Intent</th>
+                    <th className="py-3.5 px-4">Sentiment</th>
+                    <th className="py-3.5 px-4">Urgency</th>
+                    <th className="py-3.5 px-4">Status</th>
+                    <th className="py-3.5 px-4 text-right">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-[#23364D]">
+                  {tickets.map((ticket) => (
+                    <tr
+                      key={ticket.id}
+                      onClick={() => onSelectTicket(ticket.id)}
+                      className="hover:bg-blue-50/40 dark:hover:bg-[#13263A]/70 transition-colors cursor-pointer"
+                    >
+                      {/* Ticket ID */}
+                      <td className="py-3.5 px-4 font-mono font-bold text-xs text-slate-900 dark:text-white whitespace-nowrap">
+                        #{ticket.id}
+                      </td>
+
+                      {/* Customer Name */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <span className="font-semibold text-slate-900 dark:text-white block">{ticket.customer_name}</span>
+                        <span className="text-xs text-slate-400 dark:text-slate-400">{ticket.channel || 'web'}</span>
+                      </td>
+
+                      {/* Category Topic */}
+                      <td className="py-3.5 px-4">
+                        <span className="inline-block px-2.5 py-0.5 rounded text-xs font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-900 dark:text-blue-300 border border-blue-200/60 dark:border-blue-800 whitespace-nowrap">
+                          {ticket.category}
+                        </span>
+                        {ticket.confidence !== undefined && (
+                          <span className="block text-[11px] text-slate-400 dark:text-slate-400 mt-0.5">
+                            {Math.round(ticket.confidence * 100)}% conf
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Intent */}
+                      <td className="py-3.5 px-4 text-xs font-medium text-slate-600 dark:text-slate-300">
+                        {ticket.intent || '—'}
+                      </td>
+
+                      {/* Sentiment & Tone */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        {getSentimentPill(ticket.sentiment)}
+                      </td>
+
+                      {/* Urgency */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        {getUrgencyBadge(ticket.urgency_level, ticket.urgency_score)}
+                      </td>
+
+                      {/* Status */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        {getStatusBadge(ticket.status)}
+                      </td>
+
+                      {/* Action */}
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectTicket(ticket.id);
+                          }}
+                          className="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-[#23364D] hover:bg-[#0F2A5F] hover:text-white dark:hover:bg-blue-600 text-xs font-semibold text-slate-700 dark:text-slate-200 transition cursor-pointer"
+                        >
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        )}
-      </div>
+        </>
+      )}
+
+      {/* MOBILE FILTER MODAL / DRAWER */}
+      {isMobileFilterOpen && (
+        <div className="fixed inset-0 z-50 md:hidden flex flex-col justify-end">
+          <div
+            className="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-xs transition-opacity"
+            onClick={() => setIsMobileFilterOpen(false)}
+          />
+          <div className="relative bg-white dark:bg-[#0D1B2A] rounded-t-2xl p-6 shadow-modal border-t border-slate-200 dark:border-[#23364D] max-h-[85vh] overflow-y-auto space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-[#23364D]">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Filter Complaints</h3>
+              </div>
+              <button
+                onClick={() => setIsMobileFilterOpen(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Filter Fields */}
+            <div className="space-y-3 text-sm">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Issue Category</label>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-[#13263A] border border-slate-200 dark:border-[#23364D] rounded-xl px-3.5 py-3 text-slate-800 dark:text-white min-h-[44px]"
+                >
+                  <option value="">All Categories</option>
+                  <option value="Delivery & Logistics">Delivery & Logistics</option>
+                  <option value="Billing & Refund">Billing & Refund</option>
+                  <option value="Product Defect">Product Defect</option>
+                  <option value="Technical Support">Technical Support</option>
+                  <option value="Account & Login">Account & Login</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Customer Intent</label>
+                <select
+                  value={intentFilter}
+                  onChange={(e) => setIntentFilter(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-[#13263A] border border-slate-200 dark:border-[#23364D] rounded-xl px-3.5 py-3 text-slate-800 dark:text-white min-h-[44px]"
+                >
+                  <option value="">All Intents</option>
+                  <option value="Request Refund">Request Refund</option>
+                  <option value="Request Replacement">Request Replacement</option>
+                  <option value="Track Order">Track Order</option>
+                  <option value="Cancel Order">Cancel Order</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Urgency Level</label>
+                <select
+                  value={urgencyFilter}
+                  onChange={(e) => setUrgencyFilter(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-[#13263A] border border-slate-200 dark:border-[#23364D] rounded-xl px-3.5 py-3 text-slate-800 dark:text-white min-h-[44px]"
+                >
+                  <option value="">All Urgencies</option>
+                  <option value="Critical">Critical</option>
+                  <option value="High">High</option>
+                  <option value="Medium">Medium</option>
+                  <option value="Low">Low</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Status</label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-[#13263A] border border-slate-200 dark:border-[#23364D] rounded-xl px-3.5 py-3 text-slate-800 dark:text-white min-h-[44px]"
+                >
+                  <option value="">All Statuses</option>
+                  <option value="open">Open</option>
+                  <option value="in_review">In Review</option>
+                  <option value="escalated">Escalated</option>
+                  <option value="resolved">Resolved</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Modal Buttons */}
+            <div className="pt-3 border-t border-slate-100 dark:border-[#23364D] flex gap-3">
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                className="flex-1 py-3 rounded-xl border border-slate-200 dark:border-[#23364D] text-slate-700 dark:text-slate-200 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-[#13263A] min-h-[44px] cursor-pointer"
+              >
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsMobileFilterOpen(false)}
+                className="flex-1 py-3 rounded-xl bg-[#0F2A5F] dark:bg-blue-600 text-white text-sm font-semibold hover:bg-[#163A7A] min-h-[44px] cursor-pointer"
+              >
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* CSV Bulk Ingestion Modal */}
       <CsvImportModal
         isOpen={isImportModalOpen}
         onClose={() => setIsImportModalOpen(false)}
         activeWorkspace={activeWorkspace}
-        onImportComplete={() => loadTickets()}
+        onImportCompleted={() => {
+          setIsImportModalOpen(false);
+          loadTickets();
+        }}
       />
     </div>
   );
